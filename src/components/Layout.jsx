@@ -14,19 +14,22 @@ export function TopBar({ title, left, right, subtitle, titleFont = 'display' }) 
     <header
       className="sticky top-0 z-40"
       style={{
-        background: 'var(--bg-secondary)',
+        background: 'var(--bg-card)',
         borderBottom: '1px solid var(--border)',
+        boxShadow: '0 1px 3px var(--shadow)',
       }}
     >
       <div className="flex items-center justify-between px-4 h-14">
         <div className="w-16 flex items-center">{left}</div>
         <div className="flex-1 text-center">
           <h1
-            className={titleFont === 'display' ? 'text-[22px] leading-tight' : 'text-[15px] font-semibold leading-tight'}
             style={{
               fontFamily: titleFont === 'display' ? 'var(--font-display)' : 'var(--font-body)',
               fontStyle: titleFont === 'display' ? 'italic' : 'normal',
+              fontWeight: titleFont === 'display' ? 400 : 600,
+              fontSize: titleFont === 'display' ? '22px' : '16px',
               color: 'var(--text-primary)',
+              lineHeight: 1.2,
             }}
           >
             {title}

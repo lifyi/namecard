@@ -29,12 +29,8 @@ export default function ContactDetail() {
 
   async function handleDelete() {
     setDeleting(true)
-    try {
-      await deleteContact(id)
-      navigate('/', { replace: true })
-    } catch {
-      setDeleting(false); setShowDelete(false)
-    }
+    try { await deleteContact(id); navigate('/', { replace: true }) }
+    catch { setDeleting(false); setShowDelete(false) }
   }
 
   function handleInteractionAdded(entry) {
@@ -62,45 +58,30 @@ export default function ContactDetail() {
 
   return (
     <Layout>
-      {/* Lightbox */}
       {imageViewer && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          style={{ background: 'rgba(0,0,0,0.94)' }}
-          onClick={() => setImageViewer(null)}>
-          <img src={imageViewer} alt="" className="max-w-full max-h-full rounded-[8px]" />
-          <button className="absolute top-5 right-5 text-3xl leading-none"
-            style={{ color: 'rgba(240,236,228,0.3)' }}>×</button>
+          style={{ background: 'rgba(26,24,20,0.85)' }} onClick={() => setImageViewer(null)}>
+          <img src={imageViewer} alt="" className="max-w-full max-h-full rounded-[8px]" style={{ boxShadow: '0 8px 32px rgba(0,0,0,0.3)' }} />
+          <button className="absolute top-5 right-5 text-3xl leading-none" style={{ color: 'rgba(255,255,255,0.5)' }}>×</button>
         </div>
       )}
 
-      {/* Delete sheet */}
       {showDelete && (
         <>
-          <div className="fixed inset-0 z-40" style={{ background: 'rgba(0,0,0,0.6)' }} onClick={() => setShowDelete(false)} />
+          <div className="fixed inset-0 z-40" style={{ background: 'rgba(26,24,20,0.5)' }} onClick={() => setShowDelete(false)} />
           <div className="fixed bottom-0 left-0 right-0 z-50 slide-up"
-            style={{ background: 'var(--bg-secondary)', borderTop: '1px solid var(--border)', borderRadius: '16px 16px 0 0', padding: '20px 16px 32px' }}>
-            <h3 style={{ fontSize: '17px', fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-body)', marginBottom: '6px' }}>
-              Delete contact?
-            </h3>
-            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', fontFamily: 'var(--font-body)', marginBottom: '20px' }}>
-              This cannot be undone.
-            </p>
-            <Button variant="danger" fullWidth onClick={handleDelete} loading={deleting}>
-              Delete {contact.name}
-            </Button>
+            style={{ background: '#ffffff', borderTop: '1px solid var(--border)', borderRadius: '16px 16px 0 0', boxShadow: '0 -8px 32px rgba(0,0,0,0.12)', padding: '20px 16px 32px' }}>
+            <h3 style={{ fontSize: 17, fontFamily: 'var(--font-display)', fontStyle: 'italic', color: 'var(--text-primary)', marginBottom: 6 }}>Delete contact?</h3>
+            <p style={{ fontSize: 13, color: 'var(--text-secondary)', fontFamily: 'var(--font-body)', marginBottom: 20 }}>This cannot be undone.</p>
+            <Button variant="danger" fullWidth onClick={handleDelete} loading={deleting}>Delete {contact.name}</Button>
             <div style={{ height: 10 }} />
             <Button variant="secondary" fullWidth onClick={() => setShowDelete(false)}>Cancel</Button>
           </div>
         </>
       )}
 
-      {/* Add interaction sheet */}
       {showAddInteraction && (
-        <AddInteractionSheet
-          contactId={id}
-          onSave={handleInteractionAdded}
-          onClose={() => setShowAddInteraction(false)}
-        />
+        <AddInteractionSheet contactId={id} onSave={handleInteractionAdded} onClose={() => setShowAddInteraction(false)} />
       )}
 
       <TopBar
@@ -118,65 +99,58 @@ export default function ContactDetail() {
 
       <div className="flex-1 overflow-y-auto pb-28">
         {/* Card thumbnails */}
-        {(contact.card_front_url || contact.card_back_url) && (
-          <div className="flex gap-2 px-4 pt-4">
-            {[contact.card_front_url, contact.card_back_url].map((url, i) => url && (
-              <button key={i} className="flex-1 active:opacity-80"
-                style={{ height: 90, borderRadius: 8, border: '1px solid var(--border)', overflow: 'hidden' }}
-                onClick={() => setImageViewer(url)}>
-                <img src={url} alt="" className="w-full h-full object-cover" />
-              </button>
-            ))}
-          </div>
-        )}
-        {!contact.card_front_url && !contact.card_back_url && (
-          <div className="flex gap-2 px-4 pt-4">
-            {[0, 1].map(i => (
-              <div key={i} className="flex-1 flex items-center justify-center"
-                style={{ height: 90, borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg-card)' }}>
-                <CardPlaceholderIcon />
-              </div>
-            ))}
-          </div>
-        )}
+        <div className="flex gap-2 px-4 pt-4">
+          {contact.card_front_url ? (
+            <button className="flex-1 active:opacity-80"
+              style={{ height: 90, borderRadius: 8, border: '1px solid var(--border)', overflow: 'hidden', boxShadow: '0 1px 3px var(--shadow)' }}
+              onClick={() => setImageViewer(contact.card_front_url)}>
+              <img src={contact.card_front_url} alt="" className="w-full h-full object-cover" />
+            </button>
+          ) : (
+            <CardPlaceholder />
+          )}
+          {contact.card_back_url ? (
+            <button className="flex-1 active:opacity-80"
+              style={{ height: 90, borderRadius: 8, border: '1px solid var(--border)', overflow: 'hidden', boxShadow: '0 1px 3px var(--shadow)' }}
+              onClick={() => setImageViewer(contact.card_back_url)}>
+              <img src={contact.card_back_url} alt="" className="w-full h-full object-cover" />
+            </button>
+          ) : (
+            <CardPlaceholder />
+          )}
+        </div>
 
         <div className="px-4 pt-4 flex flex-col gap-5">
           {/* Summary strip */}
           <SummaryStrip stats={stats} />
 
-          {/* Quick actions */}
+          {/* Equal-width action buttons */}
           <div className="flex gap-2">
-            {contact.email && (
-              <a href={`mailto:${contact.email}`}
+            {[
+              contact.email && { href: `mailto:${contact.email}`, label: 'Email', icon: <MailIcon /> },
+              contact.phone && { href: `tel:${contact.phone}`, label: 'Call', icon: <PhoneIcon /> },
+              { label: contact.follow_up_flag ? 'Flagged' : 'Flag', icon: <FlagIcon />, onClick: handleToggleFollowUp, active: contact.follow_up_flag },
+            ].filter(Boolean).map((btn, i) => btn.href ? (
+              <a key={i} href={btn.href}
                 className="flex-1 flex items-center justify-center gap-2 active:scale-[0.97]"
-                style={{ height: 44, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 13, color: 'var(--text-primary)', fontFamily: 'var(--font-body)', textDecoration: 'none', transition: 'all 150ms' }}>
-                <MailIcon /> Email
+                style={{ height: 44, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 13, color: 'var(--text-primary)', fontFamily: 'var(--font-body)', textDecoration: 'none', boxShadow: '0 1px 2px var(--shadow)', transition: 'all 150ms' }}>
+                {btn.icon} {btn.label}
               </a>
-            )}
-            {contact.phone && (
-              <a href={`tel:${contact.phone}`}
+            ) : (
+              <button key={i} onClick={btn.onClick}
                 className="flex-1 flex items-center justify-center gap-2 active:scale-[0.97]"
-                style={{ height: 44, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 13, color: 'var(--text-primary)', fontFamily: 'var(--font-body)', textDecoration: 'none', transition: 'all 150ms' }}>
-                <PhoneIcon /> Call
-              </a>
-            )}
-            <button
-              onClick={handleToggleFollowUp}
-              className="flex items-center justify-center gap-1.5 active:scale-[0.97]"
-              style={{
-                height: 44, paddingLeft: 14, paddingRight: 14,
-                borderRadius: 8, fontSize: 13,
-                fontFamily: 'var(--font-body)',
-                transition: 'all 150ms',
-                background: contact.follow_up_flag ? 'rgba(201,168,108,0.12)' : 'var(--bg-card)',
-                border: `1px solid ${contact.follow_up_flag ? 'rgba(201,168,108,0.4)' : 'var(--border)'}`,
-                color: contact.follow_up_flag ? 'var(--accent)' : 'var(--text-secondary)',
-              }}>
-              <FlagIcon /> {contact.follow_up_flag ? 'Flagged' : 'Flag'}
-            </button>
+                style={{
+                  height: 44, borderRadius: 8, fontSize: 13, fontFamily: 'var(--font-body)', transition: 'all 150ms',
+                  background: btn.active ? 'rgba(138,104,48,0.1)' : 'var(--bg-card)',
+                  border: `1px solid ${btn.active ? 'var(--accent)' : 'var(--border)'}`,
+                  color: btn.active ? 'var(--accent)' : 'var(--text-primary)',
+                  boxShadow: '0 1px 2px var(--shadow)',
+                }}>
+                {btn.icon} {btn.label}
+              </button>
+            ))}
           </div>
 
-          {/* Contact info */}
           <Section title="Contact">
             <Field label="Name" value={contact.name} />
             <Field label="Other Name" value={contact.alternate_name} />
@@ -188,25 +162,19 @@ export default function ContactDetail() {
             <Field label="Address" value={contact.address} />
           </Section>
 
-          {/* Context */}
           <Section title="Context">
-            <Field label="Date Met" value={contact.date_met && formatDateLong(contact.date_met)} />
+            <Field label="Date Met" value={contact.date_met && fmtDateLong(contact.date_met)} />
             <Field label="Where Met" value={contact.where_met} />
             <Field label="How Met" value={contact.how_met} />
           </Section>
 
-          {/* Classification */}
           <Section title="Classification">
             {contact.industry && (
-              <div style={{ marginBottom: 14 }}>
+              <div>
                 <span style={{ fontSize: '11px', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: 'var(--font-body)', display: 'block', marginBottom: 4 }}>Industry</span>
-                <span style={{
-                  display: 'inline-flex', alignItems: 'center', gap: 6,
-                  padding: '4px 12px', borderRadius: 20,
-                  background: hex2rgba(color, 0.15),
-                  border: `1px solid ${hex2rgba(color, 0.3)}`,
-                  color: color, fontSize: 13, fontFamily: 'var(--font-body)',
-                }}>{contact.industry}</span>
+                <span style={{ display: 'inline-flex', alignItems: 'center', padding: '4px 12px', borderRadius: 20, background: hex2rgba(color, 0.12), border: `1px solid ${hex2rgba(color, 0.3)}`, color, fontSize: 13, fontFamily: 'var(--font-body)' }}>
+                  {contact.industry}
+                </span>
               </div>
             )}
             <Field label="Relationship" value={contact.relationship_type} />
@@ -216,26 +184,18 @@ export default function ContactDetail() {
                 <span style={{ fontSize: '11px', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: 'var(--font-body)', display: 'block', marginBottom: 6 }}>Tags</span>
                 <div className="flex flex-wrap gap-1.5">
                   {contact.tags.map(tag => (
-                    <span key={tag} style={{
-                      padding: '3px 10px', borderRadius: 20,
-                      background: 'rgba(122,101,64,0.18)', border: '1px solid var(--accent-dim)',
-                      color: 'var(--accent)', fontSize: 11, fontFamily: 'var(--font-body)',
-                    }}>{tag}</span>
+                    <span key={tag} style={{ padding: '3px 10px', borderRadius: 20, background: 'rgba(138,104,48,0.08)', border: '1px solid var(--accent)', color: 'var(--accent)', fontSize: 11, fontFamily: 'var(--font-body)' }}>
+                      {tag}
+                    </span>
                   ))}
                 </div>
               </div>
             )}
           </Section>
 
-          {/* Interaction log */}
-          <InteractionLog
-            interactions={contact.interactions || []}
-            onAddInteraction={() => setShowAddInteraction(true)}
-          />
+          <InteractionLog interactions={contact.interactions || []} onAddInteraction={() => setShowAddInteraction(true)} />
 
-          {/* Delete */}
-          <button
-            onClick={() => setShowDelete(true)}
+          <button onClick={() => setShowDelete(true)}
             style={{ width: '100%', padding: '12px 0', fontSize: 13, color: 'var(--text-tertiary)', fontFamily: 'var(--font-body)', transition: 'color 150ms' }}
             onMouseEnter={e => e.currentTarget.style.color = 'var(--accent-danger)'}
             onMouseLeave={e => e.currentTarget.style.color = 'var(--text-tertiary)'}
@@ -248,31 +208,20 @@ export default function ContactDetail() {
   )
 }
 
-// ── Summary strip ─────────────────────────────────────────────────────────────
 function SummaryStrip({ stats }) {
   const parts = []
-  if (stats.firstMet) parts.push(`First met ${formatDateShort(stats.firstMet)}`)
-  if (stats.lastSeen && stats.lastSeen !== stats.firstMet) parts.push(`Last seen ${formatDateShort(stats.lastSeen)}`)
+  if (stats.firstMet) parts.push(`First met ${fmtDateShort(stats.firstMet)}`)
+  if (stats.lastSeen && stats.lastSeen !== stats.firstMet) parts.push(`Last seen ${fmtDateShort(stats.lastSeen)}`)
   if (stats.count > 0) parts.push(`${stats.count} interaction${stats.count !== 1 ? 's' : ''}`)
   if (stats.daysSince !== null) parts.push(stats.daysSince === 0 ? 'Seen today' : `${stats.daysSince}d since last contact`)
   if (!parts.length) return null
 
   return (
-    <div style={{
-      background: 'var(--bg-card)',
-      border: '1px solid var(--border)',
-      borderRadius: 10,
-      padding: '12px 16px',
-    }}>
-      <p style={{
-        fontSize: 13,
-        color: 'var(--text-secondary)',
-        fontFamily: 'var(--font-body)',
-        lineHeight: 1.6,
-      }}>
+    <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 10, padding: '12px 16px', boxShadow: '0 1px 3px var(--shadow)' }}>
+      <p style={{ fontSize: 13, color: 'var(--text-secondary)', fontFamily: 'var(--font-body)', lineHeight: 1.7 }}>
         {parts.map((p, i) => (
           <span key={i}>
-            {i > 0 && <span style={{ color: 'var(--text-tertiary)', margin: '0 6px' }}>·</span>}
+            {i > 0 && <span style={{ color: 'var(--border)', margin: '0 6px' }}>·</span>}
             {p}
           </span>
         ))}
@@ -281,20 +230,12 @@ function SummaryStrip({ stats }) {
   )
 }
 
-// ── Section heading ───────────────────────────────────────────────────────────
 function Section({ title, children }) {
+  const kids = Array.isArray(children) ? children : [children]
+  if (!kids.some(c => c && c.props?.value)) return null
   return (
     <div>
-      <h3 style={{
-        fontFamily: 'var(--font-display)',
-        fontStyle: 'italic',
-        fontSize: 11,
-        color: 'var(--text-tertiary)',
-        letterSpacing: '0.08em',
-        textTransform: 'uppercase',
-        marginBottom: 12,
-        marginTop: 4,
-      }}>{title}</h3>
+      <h3 style={{ fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: 12, color: 'var(--text-tertiary)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 12 }}>{title}</h3>
       <div className="flex flex-col" style={{ gap: 14 }}>{children}</div>
     </div>
   )
@@ -304,47 +245,30 @@ function Field({ label, value, href }) {
   if (!value) return null
   return (
     <div>
-      <span style={{ fontSize: '11px', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: 'var(--font-body)', display: 'block', marginBottom: 3 }}>
-        {label}
-      </span>
+      <span style={{ fontSize: '11px', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: 'var(--font-body)', display: 'block', marginBottom: 3 }}>{label}</span>
       {href ? (
-        <a href={href} style={{ fontSize: 14, color: 'var(--accent)', fontFamily: 'var(--font-body)', textDecoration: 'none' }}>
-          {value}
-        </a>
+        <a href={href} style={{ fontSize: 14, color: 'var(--accent)', fontFamily: 'var(--font-body)', textDecoration: 'none' }}>{value}</a>
       ) : (
-        <span style={{ fontSize: 14, color: 'var(--text-primary)', fontFamily: 'var(--font-body)', lineHeight: 1.5, display: 'block' }}>
-          {value}
-        </span>
+        <span style={{ fontSize: 14, color: 'var(--text-primary)', fontFamily: 'var(--font-body)', lineHeight: 1.5, display: 'block' }}>{value}</span>
       )}
     </div>
   )
 }
 
-// ── Interaction log ───────────────────────────────────────────────────────────
 function InteractionLog({ interactions, onAddInteraction }) {
+  // Oldest first — LATEST badge on the last (most recent) entry
+  const sorted = [...interactions].sort((a, b) => a.date.localeCompare(b.date))
   return (
     <div>
-      <div className="flex items-center justify-between" style={{ marginBottom: 12, marginTop: 4 }}>
-        <h3 style={{
-          fontFamily: 'var(--font-display)',
-          fontStyle: 'italic',
-          fontSize: 11,
-          color: 'var(--text-tertiary)',
-          letterSpacing: '0.08em',
-          textTransform: 'uppercase',
-        }}>Interactions</h3>
-        <span style={{ fontSize: 11, color: 'var(--text-tertiary)', fontFamily: 'var(--font-body)' }}>
-          {interactions.length} total
-        </span>
+      <div className="flex items-center justify-between" style={{ marginBottom: 12 }}>
+        <h3 style={{ fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: 12, color: 'var(--text-tertiary)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Interactions</h3>
+        <span style={{ fontSize: 11, color: 'var(--text-tertiary)', fontFamily: 'var(--font-body)' }}>{interactions.length} total</span>
       </div>
-
       <div className="flex flex-col" style={{ gap: 10 }}>
-        {[...interactions].reverse().map((entry, idx) => (
-          <InteractionEntry key={entry.id} entry={entry} isLatest={idx === 0} />
+        {sorted.map((entry, idx) => (
+          <InteractionEntry key={entry.id} entry={entry} isLatest={idx === sorted.length - 1} />
         ))}
       </div>
-
-      {/* Add interaction button */}
       <AddInteractionBtn onClick={onAddInteraction} />
     </div>
   )
@@ -352,71 +276,45 @@ function InteractionLog({ interactions, onAddInteraction }) {
 
 function InteractionEntry({ entry, isLatest }) {
   const [showRaw, setShowRaw] = useState(false)
-
   return (
-    <div style={{
-      background: 'var(--bg-card)',
-      border: '1px solid var(--border)',
-      borderRadius: 10,
-      overflow: 'hidden',
-    }}>
-      <div className="flex items-center justify-between" style={{ padding: '12px 14px 10px' }}>
+    <div style={{ background: '#ffffff', border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden', boxShadow: '0 1px 4px var(--shadow)' }}>
+      <div className="flex items-center justify-between" style={{ padding: '11px 14px 9px' }}>
         <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-body)' }}>
-          {formatDateLong(entry.date)}
+          {fmtDateLong(entry.date)}
         </span>
         {isLatest && (
-          <span style={{
-            padding: '2px 8px',
-            borderRadius: 20,
-            background: 'var(--accent)',
-            color: 'var(--bg-primary)',
-            fontSize: 9,
-            fontWeight: 700,
-            fontFamily: 'var(--font-body)',
-            letterSpacing: '0.06em',
-            textTransform: 'uppercase',
-          }}>Latest</span>
+          <span style={{ padding: '2px 8px', borderRadius: 20, background: 'var(--accent)', color: '#ffffff', fontSize: 9, fontWeight: 700, fontFamily: 'var(--font-body)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+            Latest
+          </span>
         )}
       </div>
-
       <p style={{ fontSize: 14, color: 'var(--text-secondary)', fontFamily: 'var(--font-body)', lineHeight: 1.55, padding: '0 14px 10px' }}>
         {entry.discussion}
       </p>
-
       {entry.follow_up && (
         <div className="flex items-start gap-2" style={{ padding: '0 14px 12px' }}>
           <FlagIcon style={{ color: 'var(--accent)', marginTop: 2, flexShrink: 0 }} />
-          <p style={{ fontSize: 13, color: 'var(--accent)', fontFamily: 'var(--font-body)', lineHeight: 1.5 }}>
-            {entry.follow_up}
-          </p>
+          <p style={{ fontSize: 13, color: 'var(--accent)', fontFamily: 'var(--font-body)', lineHeight: 1.5 }}>{entry.follow_up}</p>
         </div>
       )}
-
       {entry.raw_note && (
         <div style={{ borderTop: '1px solid var(--border)' }}>
-          <button
-            onClick={() => setShowRaw(v => !v)}
+          <button onClick={() => setShowRaw(v => !v)}
             className="flex items-center gap-2 w-full"
-            style={{ padding: '9px 14px', fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-body)', transition: 'color 150ms' }}
+            style={{ padding: '8px 14px', fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-body)', transition: 'color 150ms' }}
             onMouseEnter={e => e.currentTarget.style.color = 'var(--text-secondary)'}
             onMouseLeave={e => e.currentTarget.style.color = 'var(--text-tertiary)'}
           >
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-              style={{ transition: 'transform 150ms', transform: showRaw ? 'rotate(90deg)' : 'rotate(0deg)' }}>
+              style={{ transition: 'transform 150ms', transform: showRaw ? 'rotate(90deg)' : 'none' }}>
               <polyline points="9 18 15 12 9 6" />
             </svg>
             {showRaw ? 'Hide raw note' : 'Show raw note'}
           </button>
           {showRaw && (
-            <p style={{
-              padding: '0 14px 12px',
-              fontSize: 12,
-              color: 'var(--text-tertiary)',
-              fontFamily: 'monospace',
-              lineHeight: 1.6,
-              fontStyle: 'italic',
-              whiteSpace: 'pre-wrap',
-            }}>{entry.raw_note}</p>
+            <p style={{ padding: '0 14px 12px', fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'monospace', lineHeight: 1.6, fontStyle: 'italic', whiteSpace: 'pre-wrap', background: 'var(--bg-secondary)', borderTop: '1px solid var(--border)' }}>
+              {entry.raw_note}
+            </p>
           )}
         </div>
       )}
@@ -427,30 +325,22 @@ function InteractionEntry({ entry, isLatest }) {
 function AddInteractionBtn({ onClick }) {
   const [hovered, setHovered] = useState(false)
   return (
-    <button
-      onClick={onClick}
+    <button onClick={onClick}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       className="w-full flex items-center justify-center gap-2 active:scale-[0.98]"
       style={{
-        marginTop: 10,
-        height: 48,
-        borderRadius: 10,
-        border: `1px dashed ${hovered ? 'var(--accent)' : 'var(--border)'}`,
+        marginTop: 10, height: 48, borderRadius: 10,
+        border: `1.5px dashed ${hovered ? 'var(--accent)' : 'var(--border)'}`,
         background: 'transparent',
-        color: hovered ? 'var(--accent)' : 'var(--text-secondary)',
-        fontSize: 13,
-        fontFamily: 'var(--font-body)',
-        transition: 'all 150ms',
-      }}
-    >
-      <MicIcon />
-      Add interaction
+        color: hovered ? 'var(--accent)' : 'var(--text-tertiary)',
+        fontSize: 13, fontFamily: 'var(--font-body)', transition: 'all 150ms',
+      }}>
+      <MicIcon /> Add interaction
     </button>
   )
 }
 
-// ── Add Interaction Sheet ─────────────────────────────────────────────────────
 function AddInteractionSheet({ contactId, onSave, onClose }) {
   const today = new Date().toISOString().split('T')[0]
   const [date, setDate] = useState(today)
@@ -458,20 +348,15 @@ function AddInteractionSheet({ contactId, onSave, onClose }) {
   const [loading, setLoading] = useState(false)
 
   const { listening, supported: speechSupported, toggle: toggleSpeech } = useSpeech(
-    useCallback(transcript => {
-      setText(t => t ? `${t} ${transcript}` : transcript)
-    }, [])
+    useCallback(transcript => { setText(t => t ? `${t} ${transcript}` : transcript) }, [])
   )
 
-  async function handleStructureAndSave() {
+  async function handleSave() {
     if (!text.trim()) return
     setLoading(true)
     await new Promise(r => setTimeout(r, 1000))
     const entry = addMockInteraction(contactId, {
-      date,
-      discussion: text.length > 100 ? text.slice(0, 100) + '…' : text,
-      follow_up: null,
-      raw_note: text,
+      date, discussion: text.length > 100 ? text.slice(0, 100) + '…' : text, follow_up: null, raw_note: text,
     })
     setLoading(false)
     onSave(entry)
@@ -479,57 +364,35 @@ function AddInteractionSheet({ contactId, onSave, onClose }) {
 
   return (
     <>
-      <div className="fixed inset-0 z-40" style={{ background: 'rgba(0,0,0,0.6)' }} onClick={onClose} />
+      <div className="fixed inset-0 z-40" style={{ background: 'rgba(26,24,20,0.4)' }} onClick={onClose} />
       <div className="fixed bottom-0 left-0 right-0 z-50 slide-up"
-        style={{ background: 'var(--bg-secondary)', borderTop: '1px solid var(--border)', borderRadius: '16px 16px 0 0', padding: '20px 16px 32px' }}>
+        style={{ background: '#ffffff', borderTop: '1px solid var(--border)', borderRadius: '16px 16px 0 0', boxShadow: '0 -8px 32px rgba(0,0,0,0.12)', padding: '20px 16px 32px' }}>
         <div className="flex justify-center mb-3">
           <div style={{ width: 36, height: 4, borderRadius: 2, background: 'var(--border)' }} />
         </div>
         <div className="flex items-center justify-between" style={{ marginBottom: 20 }}>
-          <h3 style={{ fontSize: 17, fontFamily: 'var(--font-display)', fontStyle: 'italic', color: 'var(--text-primary)' }}>
-            Add Interaction
-          </h3>
+          <h3 style={{ fontSize: 20, fontFamily: 'var(--font-display)', fontStyle: 'italic', color: 'var(--text-primary)' }}>Add Interaction</h3>
           <button onClick={onClose} style={{ fontSize: 24, color: 'var(--text-tertiary)', lineHeight: 1 }}>×</button>
         </div>
-
-        {/* Date */}
-        <div style={{ marginBottom: 16 }}>
+        <div style={{ marginBottom: 14 }}>
           <label style={{ fontSize: 11, color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: 'var(--font-body)', display: 'block', marginBottom: 4 }}>Date</label>
           <input type="date" value={date} onChange={e => setDate(e.target.value)}
-            style={{ width: '100%', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8, padding: '0 12px', height: 40, fontSize: 14, color: 'var(--text-primary)', fontFamily: 'var(--font-body)', outline: 'none' }} />
+            style={{ width: '100%', background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 8, padding: '0 12px', height: 40, fontSize: 14, color: 'var(--text-primary)', fontFamily: 'var(--font-body)', outline: 'none' }} />
         </div>
-
-        {/* Notes */}
-        <div style={{ marginBottom: 20 }}>
+        <div style={{ marginBottom: 18 }}>
           <div className="flex items-center justify-between" style={{ marginBottom: 4 }}>
             <label style={{ fontSize: 11, color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: 'var(--font-body)' }}>Notes</label>
-            {speechSupported && (
-              <button onClick={toggleSpeech}
-                className="flex items-center gap-1.5"
-                style={{
-                  padding: '3px 10px', borderRadius: 20, fontSize: 12, fontFamily: 'var(--font-body)',
-                  border: `1px solid ${listening ? 'rgba(192,97,74,0.4)' : 'var(--border)'}`,
-                  background: listening ? 'rgba(192,97,74,0.12)' : 'var(--bg-card)',
-                  color: listening ? 'var(--accent-danger)' : 'var(--text-secondary)',
-                  transition: 'all 150ms',
-                }}>
-                {listening ? <><span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--accent-danger)', display: 'inline-block', animation: 'pulse 1s infinite' }} /> Stop</> : <><MicIcon /> Dictate</>}
-              </button>
-            )}
+            {speechSupported && <MicButton listening={listening} onToggle={toggleSpeech} />}
           </div>
-          <textarea
-            value={text}
-            onChange={e => setText(e.target.value)}
+          <textarea value={text} onChange={e => setText(e.target.value)}
             placeholder="What was discussed, any follow-up actions…"
-            rows={4}
-            autoFocus
-            style={{ width: '100%', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 12px', fontSize: 14, color: 'var(--text-primary)', fontFamily: 'var(--font-body)', outline: 'none', resize: 'none', lineHeight: 1.5 }}
-            onFocus={e => e.target.style.borderColor = 'rgba(201,168,108,0.4)'}
-            onBlur={e => e.target.style.borderColor = 'var(--border)'}
+            rows={4} autoFocus
+            style={{ width: '100%', background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 12px', fontSize: 14, color: 'var(--text-primary)', fontFamily: 'var(--font-body)', outline: 'none', resize: 'none', lineHeight: 1.5 }}
+            onFocus={e => { e.target.style.borderColor = 'var(--accent)'; e.target.style.boxShadow = '0 0 0 3px rgba(138,104,48,0.12)' }}
+            onBlur={e => { e.target.style.borderColor = 'var(--border)'; e.target.style.boxShadow = 'none' }}
           />
         </div>
-
-        <Button variant="primary" size="lg" fullWidth onClick={handleStructureAndSave} loading={loading} disabled={!text.trim()}>
+        <Button variant="primary" size="lg" fullWidth onClick={handleSave} loading={loading} disabled={!text.trim()}>
           Structure & Save
         </Button>
       </div>
@@ -537,7 +400,17 @@ function AddInteractionSheet({ contactId, onSave, onClose }) {
   )
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+function CardPlaceholder() {
+  return (
+    <div className="flex-1 flex items-center justify-center"
+      style={{ height: 90, borderRadius: 8, border: '1.5px dashed var(--border)', background: 'var(--bg-secondary)' }}>
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" strokeWidth="1.5">
+        <rect x="2" y="5" width="20" height="14" rx="3" /><line x1="6" y1="10" x2="13" y2="10" /><line x1="6" y1="14" x2="9" y2="14" />
+      </svg>
+    </div>
+  )
+}
+
 function BackBtn({ onClick }) {
   return (
     <button onClick={onClick} className="flex items-center gap-1"
@@ -545,10 +418,17 @@ function BackBtn({ onClick }) {
       onMouseEnter={e => e.currentTarget.style.color = 'var(--text-primary)'}
       onMouseLeave={e => e.currentTarget.style.color = 'var(--text-secondary)'}
     >
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <polyline points="15 18 9 12 15 6" />
-      </svg>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="15 18 9 12 15 6" /></svg>
       Back
+    </button>
+  )
+}
+
+function MicButton({ listening, onToggle }) {
+  return (
+    <button onClick={onToggle} className="flex items-center gap-1.5"
+      style={{ padding: '3px 10px', borderRadius: 20, fontSize: 12, fontFamily: 'var(--font-body)', border: `1px solid ${listening ? 'rgba(192,97,74,0.4)' : 'var(--border)'}`, background: listening ? 'rgba(192,97,74,0.08)' : 'var(--bg-secondary)', color: listening ? 'var(--accent-danger)' : 'var(--text-secondary)', transition: 'all 150ms' }}>
+      {listening ? <><span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--accent-danger)', display: 'inline-block' }} /> Stop</> : <><MicIcon /> Dictate</>}
     </button>
   )
 }
@@ -557,18 +437,16 @@ function MailIcon() { return <svg width="14" height="14" viewBox="0 0 24 24" fil
 function PhoneIcon() { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.18 2 2 0 0 1 3.59 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.96a16 16 0 0 0 6.13 6.13l1.02-.93a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z" /></svg> }
 function FlagIcon({ style }) { return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={style}><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" /><line x1="4" y1="22" x2="4" y2="15" /></svg> }
 function MicIcon() { return <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" /><path d="M19 10v2a7 7 0 0 1-14 0v-2" /><line x1="12" y1="19" x2="12" y2="23" /><line x1="8" y1="23" x2="16" y2="23" /></svg> }
-function CardPlaceholderIcon() { return <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" strokeWidth="1.5"><rect x="2" y="5" width="20" height="14" rx="3" /><line x1="6" y1="10" x2="13" y2="10" /><line x1="6" y1="14" x2="9" y2="14" /></svg> }
 
-function formatDateLong(s) {
+function fmtDateLong(s) {
   if (!s) return ''
   const d = new Date(s)
   if (isNaN(d)) return s
   return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
 }
-function formatDateShort(s) {
+function fmtDateShort(s) {
   if (!s) return ''
   const d = new Date(s)
   if (isNaN(d)) return s
-  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+  return d.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })
 }
-

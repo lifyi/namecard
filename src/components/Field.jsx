@@ -1,17 +1,15 @@
 import React from 'react'
 
-const inputStyle = {
+const inputBase = {
   width: '100%',
-  background: 'var(--bg-card)',
+  background: '#ffffff',
   border: '1px solid var(--border)',
   borderRadius: '8px',
-  padding: '0 12px',
-  height: '40px',
   fontSize: '14px',
   color: 'var(--text-primary)',
   fontFamily: 'var(--font-body)',
   outline: 'none',
-  transition: 'border-color 150ms ease',
+  transition: 'border-color 150ms ease, box-shadow 150ms ease',
 }
 
 const labelStyle = {
@@ -25,6 +23,15 @@ const labelStyle = {
   display: 'block',
 }
 
+function focusStyle(e) {
+  e.target.style.borderColor = 'var(--accent)'
+  e.target.style.boxShadow = '0 0 0 3px rgba(138,104,48,0.12)'
+}
+function blurStyle(e) {
+  e.target.style.borderColor = 'var(--border)'
+  e.target.style.boxShadow = 'none'
+}
+
 export default function Field({ label, value, onChange, placeholder, type = 'text', multiline = false, className = '' }) {
   return (
     <div className={`flex flex-col ${className}`}>
@@ -35,15 +42,9 @@ export default function Field({ label, value, onChange, placeholder, type = 'tex
           onChange={e => onChange?.(e.target.value)}
           placeholder={placeholder}
           rows={3}
-          style={{
-            ...inputStyle,
-            height: 'auto',
-            padding: '10px 12px',
-            resize: 'none',
-            lineHeight: '1.5',
-          }}
-          onFocus={e => e.target.style.borderColor = 'rgba(201,168,108,0.5)'}
-          onBlur={e => e.target.style.borderColor = 'var(--border)'}
+          style={{ ...inputBase, padding: '10px 12px', resize: 'none', lineHeight: '1.5' }}
+          onFocus={focusStyle}
+          onBlur={blurStyle}
         />
       ) : (
         <input
@@ -51,9 +52,9 @@ export default function Field({ label, value, onChange, placeholder, type = 'tex
           value={value || ''}
           onChange={e => onChange?.(e.target.value)}
           placeholder={placeholder}
-          style={{ ...inputStyle, '--placeholder-color': 'var(--text-tertiary)' }}
-          onFocus={e => e.target.style.borderColor = 'rgba(201,168,108,0.5)'}
-          onBlur={e => e.target.style.borderColor = 'var(--border)'}
+          style={{ ...inputBase, height: '40px', padding: '0 12px' }}
+          onFocus={focusStyle}
+          onBlur={blurStyle}
         />
       )}
     </div>
@@ -67,13 +68,9 @@ export function SelectField({ label, value, onChange, options, className = '' })
       <select
         value={value || ''}
         onChange={e => onChange?.(e.target.value)}
-        style={{
-          ...inputStyle,
-          appearance: 'none',
-          cursor: 'pointer',
-        }}
-        onFocus={e => e.target.style.borderColor = 'rgba(201,168,108,0.5)'}
-        onBlur={e => e.target.style.borderColor = 'var(--border)'}
+        style={{ ...inputBase, height: '40px', padding: '0 12px', appearance: 'none', cursor: 'pointer' }}
+        onFocus={focusStyle}
+        onBlur={blurStyle}
       >
         <option value="">—</option>
         {options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
@@ -96,7 +93,7 @@ export function TagsField({ label, tags, onChange }) {
     <div className="flex flex-col">
       {label && <label style={labelStyle}>{label}</label>}
       <div style={{
-        background: 'var(--bg-card)',
+        background: '#ffffff',
         border: '1px solid var(--border)',
         borderRadius: '8px',
         padding: '8px 10px',
@@ -108,11 +105,11 @@ export function TagsField({ label, tags, onChange }) {
       }}>
         {tags.map(tag => (
           <span key={tag} style={{
-            background: 'rgba(122,101,64,0.2)',
-            border: '1px solid var(--accent-dim)',
+            background: 'rgba(138,104,48,0.08)',
+            border: '1px solid var(--accent)',
             borderRadius: '20px',
-            padding: '3px 10px',
-            fontSize: '11px',
+            padding: '2px 10px',
+            fontSize: '12px',
             color: 'var(--accent)',
             fontFamily: 'var(--font-body)',
             display: 'flex',
@@ -120,30 +117,19 @@ export function TagsField({ label, tags, onChange }) {
             gap: '5px',
           }}>
             {tag}
-            <button
-              onClick={() => removeTag(tag)}
-              style={{ color: 'var(--text-tertiary)', lineHeight: 1, cursor: 'pointer', background: 'none', border: 'none', padding: 0, fontSize: '14px' }}
-            >×</button>
+            <button onClick={() => removeTag(tag)}
+              style={{ color: 'var(--accent-dim)', lineHeight: 1, cursor: 'pointer', background: 'none', border: 'none', padding: 0, fontSize: '15px' }}>
+              ×
+            </button>
           </span>
         ))}
         <input
           value={input}
           onChange={e => setInput(e.target.value)}
-          onKeyDown={e => {
-            if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); addTag(input) }
-          }}
+          onKeyDown={e => { if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); addTag(input) } }}
           onBlur={() => input && addTag(input)}
           placeholder={tags.length === 0 ? 'Add tags…' : ''}
-          style={{
-            flex: 1,
-            minWidth: '80px',
-            background: 'transparent',
-            border: 'none',
-            outline: 'none',
-            fontSize: '14px',
-            color: 'var(--text-primary)',
-            fontFamily: 'var(--font-body)',
-          }}
+          style={{ flex: 1, minWidth: '80px', background: 'transparent', border: 'none', outline: 'none', fontSize: '14px', color: 'var(--text-primary)', fontFamily: 'var(--font-body)' }}
         />
       </div>
     </div>
