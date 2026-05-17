@@ -3,8 +3,8 @@ import { useNavigate, useParams } from 'react-router-dom'
 import Layout, { TopBar } from '../components/Layout.jsx'
 import Button from '../components/Button.jsx'
 import { getContact, toggleFollowUp, deleteContact } from '../lib/supabase.js'
-import { addMockInteraction } from '../lib/mockData.js'
-import { getContactStats } from '../lib/mockData.js'
+import { addMockInteraction, getContactStats } from '../lib/mockData.js'
+import { industryColor, hex2rgba } from '../lib/industryColors.js'
 import useSpeech from '../hooks/useSpeech.js'
 
 export default function ContactDetail() {
@@ -18,10 +18,7 @@ export default function ContactDetail() {
   const [showAddInteraction, setShowAddInteraction] = useState(false)
 
   useEffect(() => {
-    getContact(id)
-      .then(setContact)
-      .catch(() => navigate('/'))
-      .finally(() => setLoading(false))
+    getContact(id).then(setContact).catch(() => navigate('/')).finally(() => setLoading(false))
   }, [id])
 
   async function handleToggleFollowUp() {
@@ -36,8 +33,7 @@ export default function ContactDetail() {
       await deleteContact(id)
       navigate('/', { replace: true })
     } catch {
-      setDeleting(false)
-      setShowDelete(false)
+      setDeleting(false); setShowDelete(false)
     }
   }
 
@@ -52,9 +48,9 @@ export default function ContactDetail() {
   if (loading) {
     return (
       <Layout>
-        <TopBar title="" left={<BackButton onClick={() => navigate('/')} />} />
+        <TopBar title="" titleFont="body" left={<BackBtn onClick={() => navigate('/')} />} />
         <div className="px-4 pt-4 flex flex-col gap-3">
-          {[1, 2, 3].map(i => <div key={i} className="h-20 skeleton rounded-[12px]" />)}
+          {[1, 2, 3].map(i => <div key={i} className="skeleton rounded-[10px]" style={{ height: 80 }} />)}
         </div>
       </Layout>
     )
@@ -62,32 +58,40 @@ export default function ContactDetail() {
   if (!contact) return null
 
   const stats = getContactStats(contact)
+  const color = industryColor(contact.industry)
 
   return (
     <Layout>
-      {/* Image lightbox */}
+      {/* Lightbox */}
       {imageViewer && (
-        <div
-          className="fixed inset-0 bg-black/95 z-50 flex items-center justify-center p-4"
-          onClick={() => setImageViewer(null)}
-        >
-          <img src={imageViewer} alt="Card" className="max-w-full max-h-full rounded-[8px]" />
-          <button className="absolute top-5 right-5 text-white/40 hover:text-white text-3xl leading-none">×</button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,0.94)' }}
+          onClick={() => setImageViewer(null)}>
+          <img src={imageViewer} alt="" className="max-w-full max-h-full rounded-[8px]" />
+          <button className="absolute top-5 right-5 text-3xl leading-none"
+            style={{ color: 'rgba(240,236,228,0.3)' }}>×</button>
         </div>
       )}
 
-      {/* Delete confirmation sheet */}
+      {/* Delete sheet */}
       {showDelete && (
-        <div className="fixed inset-0 bg-black/70 z-50 flex items-end">
-          <div className="w-full bg-[#111] border-t border-[#2a2a2a] rounded-t-[16px] p-5 flex flex-col gap-3">
-            <h3 className="text-[16px] font-semibold text-[#e5e5e5]">Delete contact?</h3>
-            <p className="text-[13px] text-[#555]">This cannot be undone.</p>
+        <>
+          <div className="fixed inset-0 z-40" style={{ background: 'rgba(0,0,0,0.6)' }} onClick={() => setShowDelete(false)} />
+          <div className="fixed bottom-0 left-0 right-0 z-50 slide-up"
+            style={{ background: 'var(--bg-secondary)', borderTop: '1px solid var(--border)', borderRadius: '16px 16px 0 0', padding: '20px 16px 32px' }}>
+            <h3 style={{ fontSize: '17px', fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-body)', marginBottom: '6px' }}>
+              Delete contact?
+            </h3>
+            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', fontFamily: 'var(--font-body)', marginBottom: '20px' }}>
+              This cannot be undone.
+            </p>
             <Button variant="danger" fullWidth onClick={handleDelete} loading={deleting}>
               Delete {contact.name}
             </Button>
+            <div style={{ height: 10 }} />
             <Button variant="secondary" fullWidth onClick={() => setShowDelete(false)}>Cancel</Button>
           </div>
-        </div>
+        </>
       )}
 
       {/* Add interaction sheet */}
@@ -101,35 +105,42 @@ export default function ContactDetail() {
 
       <TopBar
         title={contact.name || 'Contact'}
+        titleFont="display"
         subtitle={[contact.title, contact.company].filter(Boolean).join(' · ')}
-        left={<BackButton onClick={() => navigate('/')} />}
+        left={<BackBtn onClick={() => navigate('/')} />}
         right={
-          <button onClick={() => navigate(`/contact/${id}/edit`)} className="text-[#c8a97e] text-[14px] font-medium">
+          <button onClick={() => navigate(`/contact/${id}/edit`)}
+            style={{ color: 'var(--accent)', fontSize: '14px', fontFamily: 'var(--font-body)', fontWeight: 500 }}>
             Edit
           </button>
         }
       />
 
       <div className="flex-1 overflow-y-auto pb-28">
-        {/* Card images */}
+        {/* Card thumbnails */}
         {(contact.card_front_url || contact.card_back_url) && (
           <div className="flex gap-2 px-4 pt-4">
-            {contact.card_front_url && (
-              <button className="flex-1 rounded-[10px] overflow-hidden border border-[#2a2a2a] h-28 active:opacity-80"
-                onClick={() => setImageViewer(contact.card_front_url)}>
-                <img src={contact.card_front_url} alt="Card front" className="w-full h-full object-cover" />
+            {[contact.card_front_url, contact.card_back_url].map((url, i) => url && (
+              <button key={i} className="flex-1 active:opacity-80"
+                style={{ height: 90, borderRadius: 8, border: '1px solid var(--border)', overflow: 'hidden' }}
+                onClick={() => setImageViewer(url)}>
+                <img src={url} alt="" className="w-full h-full object-cover" />
               </button>
-            )}
-            {contact.card_back_url && (
-              <button className="flex-1 rounded-[10px] overflow-hidden border border-[#2a2a2a] h-28 active:opacity-80"
-                onClick={() => setImageViewer(contact.card_back_url)}>
-                <img src={contact.card_back_url} alt="Card back" className="w-full h-full object-cover" />
-              </button>
-            )}
+            ))}
+          </div>
+        )}
+        {!contact.card_front_url && !contact.card_back_url && (
+          <div className="flex gap-2 px-4 pt-4">
+            {[0, 1].map(i => (
+              <div key={i} className="flex-1 flex items-center justify-center"
+                style={{ height: 90, borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg-card)' }}>
+                <CardPlaceholderIcon />
+              </div>
+            ))}
           </div>
         )}
 
-        <div className="px-4 py-4 flex flex-col gap-4">
+        <div className="px-4 pt-4 flex flex-col gap-5">
           {/* Summary strip */}
           <SummaryStrip stats={stats} />
 
@@ -137,66 +148,84 @@ export default function ContactDetail() {
           <div className="flex gap-2">
             {contact.email && (
               <a href={`mailto:${contact.email}`}
-                className="flex-1 flex items-center justify-center gap-2 h-10 bg-[#111] border border-[#2a2a2a]
-                  rounded-[10px] text-[13px] text-[#e5e5e5] hover:border-[#3a3a3a] transition-colors active:scale-[0.97]">
+                className="flex-1 flex items-center justify-center gap-2 active:scale-[0.97]"
+                style={{ height: 44, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 13, color: 'var(--text-primary)', fontFamily: 'var(--font-body)', textDecoration: 'none', transition: 'all 150ms' }}>
                 <MailIcon /> Email
               </a>
             )}
             {contact.phone && (
               <a href={`tel:${contact.phone}`}
-                className="flex-1 flex items-center justify-center gap-2 h-10 bg-[#111] border border-[#2a2a2a]
-                  rounded-[10px] text-[13px] text-[#e5e5e5] hover:border-[#3a3a3a] transition-colors active:scale-[0.97]">
+                className="flex-1 flex items-center justify-center gap-2 active:scale-[0.97]"
+                style={{ height: 44, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 13, color: 'var(--text-primary)', fontFamily: 'var(--font-body)', textDecoration: 'none', transition: 'all 150ms' }}>
                 <PhoneIcon /> Call
               </a>
             )}
             <button
               onClick={handleToggleFollowUp}
-              className={`flex items-center justify-center gap-1.5 px-3 h-10 rounded-[10px] text-[13px] border transition-all
-                ${contact.follow_up_flag
-                  ? 'bg-[#c8a97e]/15 border-[#c8a97e]/40 text-[#c8a97e]'
-                  : 'bg-[#111] border-[#2a2a2a] text-[#555] hover:text-[#888]'}`}
-            >
+              className="flex items-center justify-center gap-1.5 active:scale-[0.97]"
+              style={{
+                height: 44, paddingLeft: 14, paddingRight: 14,
+                borderRadius: 8, fontSize: 13,
+                fontFamily: 'var(--font-body)',
+                transition: 'all 150ms',
+                background: contact.follow_up_flag ? 'rgba(201,168,108,0.12)' : 'var(--bg-card)',
+                border: `1px solid ${contact.follow_up_flag ? 'rgba(201,168,108,0.4)' : 'var(--border)'}`,
+                color: contact.follow_up_flag ? 'var(--accent)' : 'var(--text-secondary)',
+              }}>
               <FlagIcon /> {contact.follow_up_flag ? 'Flagged' : 'Flag'}
             </button>
           </div>
 
           {/* Contact info */}
-          <InfoSection title="Contact">
-            <InfoRow label="Name" value={contact.name} />
-            {contact.alternate_name && <InfoRow label="Other Name" value={contact.alternate_name} />}
-            <InfoRow label="Title" value={contact.title} />
-            <InfoRow label="Company" value={contact.company} />
-            <InfoRow label="Email" value={contact.email} href={`mailto:${contact.email}`} />
-            <InfoRow label="Phone" value={contact.phone} href={`tel:${contact.phone}`} />
-            {contact.alternate_messenger && <InfoRow label="Messenger" value={contact.alternate_messenger} />}
-            {contact.address && <InfoRow label="Address" value={contact.address} />}
-          </InfoSection>
+          <Section title="Contact">
+            <Field label="Name" value={contact.name} />
+            <Field label="Other Name" value={contact.alternate_name} />
+            <Field label="Title" value={contact.title} />
+            <Field label="Company" value={contact.company} />
+            <Field label="Email" value={contact.email} href={`mailto:${contact.email}`} />
+            <Field label="Phone" value={contact.phone} href={`tel:${contact.phone}`} />
+            <Field label="Messenger" value={contact.alternate_messenger} />
+            <Field label="Address" value={contact.address} />
+          </Section>
 
           {/* Context */}
-          <InfoSection title="Context">
-            <InfoRow label="Date Met" value={contact.date_met && formatDateLong(contact.date_met)} />
-            <InfoRow label="Where Met" value={contact.where_met} />
-            <InfoRow label="How Met" value={contact.how_met} />
-          </InfoSection>
+          <Section title="Context">
+            <Field label="Date Met" value={contact.date_met && formatDateLong(contact.date_met)} />
+            <Field label="Where Met" value={contact.where_met} />
+            <Field label="How Met" value={contact.how_met} />
+          </Section>
 
           {/* Classification */}
-          <InfoSection title="Classification">
-            <InfoRow label="Industry" value={contact.industry} />
-            <InfoRow label="Relationship" value={contact.relationship_type} />
-            <InfoRow label="Geography" value={contact.geography} />
+          <Section title="Classification">
+            {contact.industry && (
+              <div style={{ marginBottom: 14 }}>
+                <span style={{ fontSize: '11px', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: 'var(--font-body)', display: 'block', marginBottom: 4 }}>Industry</span>
+                <span style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 6,
+                  padding: '4px 12px', borderRadius: 20,
+                  background: hex2rgba(color, 0.15),
+                  border: `1px solid ${hex2rgba(color, 0.3)}`,
+                  color: color, fontSize: 13, fontFamily: 'var(--font-body)',
+                }}>{contact.industry}</span>
+              </div>
+            )}
+            <Field label="Relationship" value={contact.relationship_type} />
+            <Field label="Geography" value={contact.geography} />
             {contact.tags?.length > 0 && (
-              <div className="px-4 py-2.5">
-                <span className="text-[10px] text-[#444] uppercase tracking-wider block mb-2">Tags</span>
+              <div>
+                <span style={{ fontSize: '11px', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: 'var(--font-body)', display: 'block', marginBottom: 6 }}>Tags</span>
                 <div className="flex flex-wrap gap-1.5">
                   {contact.tags.map(tag => (
-                    <span key={tag} className="px-2.5 py-0.5 bg-[#1a1a1a] border border-[#2a2a2a] rounded-full text-[12px] text-[#888]">
-                      {tag}
-                    </span>
+                    <span key={tag} style={{
+                      padding: '3px 10px', borderRadius: 20,
+                      background: 'rgba(122,101,64,0.18)', border: '1px solid var(--accent-dim)',
+                      color: 'var(--accent)', fontSize: 11, fontFamily: 'var(--font-body)',
+                    }}>{tag}</span>
                   ))}
                 </div>
               </div>
             )}
-          </InfoSection>
+          </Section>
 
           {/* Interaction log */}
           <InteractionLog
@@ -205,14 +234,14 @@ export default function ContactDetail() {
           />
 
           {/* Delete */}
-          <div className="pt-1">
-            <button
-              onClick={() => setShowDelete(true)}
-              className="w-full py-3 text-[#444] text-[13px] hover:text-[#e05c5c] transition-colors"
-            >
-              Delete contact
-            </button>
-          </div>
+          <button
+            onClick={() => setShowDelete(true)}
+            style={{ width: '100%', padding: '12px 0', fontSize: 13, color: 'var(--text-tertiary)', fontFamily: 'var(--font-body)', transition: 'color 150ms' }}
+            onMouseEnter={e => e.currentTarget.style.color = 'var(--accent-danger)'}
+            onMouseLeave={e => e.currentTarget.style.color = 'var(--text-tertiary)'}
+          >
+            Delete contact
+          </button>
         </div>
       </div>
     </Layout>
@@ -225,15 +254,68 @@ function SummaryStrip({ stats }) {
   if (stats.firstMet) parts.push(`First met ${formatDateShort(stats.firstMet)}`)
   if (stats.lastSeen && stats.lastSeen !== stats.firstMet) parts.push(`Last seen ${formatDateShort(stats.lastSeen)}`)
   if (stats.count > 0) parts.push(`${stats.count} interaction${stats.count !== 1 ? 's' : ''}`)
-  if (stats.daysSince !== null) {
-    parts.push(stats.daysSince === 0 ? 'Seen today' : `${stats.daysSince}d since last contact`)
-  }
-
+  if (stats.daysSince !== null) parts.push(stats.daysSince === 0 ? 'Seen today' : `${stats.daysSince}d since last contact`)
   if (!parts.length) return null
 
   return (
-    <div className="bg-[#111] border border-[#1f1f1f] rounded-[10px] px-4 py-2.5">
-      <p className="text-[12px] text-[#555] leading-relaxed">{parts.join(' · ')}</p>
+    <div style={{
+      background: 'var(--bg-card)',
+      border: '1px solid var(--border)',
+      borderRadius: 10,
+      padding: '12px 16px',
+    }}>
+      <p style={{
+        fontSize: 13,
+        color: 'var(--text-secondary)',
+        fontFamily: 'var(--font-body)',
+        lineHeight: 1.6,
+      }}>
+        {parts.map((p, i) => (
+          <span key={i}>
+            {i > 0 && <span style={{ color: 'var(--text-tertiary)', margin: '0 6px' }}>·</span>}
+            {p}
+          </span>
+        ))}
+      </p>
+    </div>
+  )
+}
+
+// ── Section heading ───────────────────────────────────────────────────────────
+function Section({ title, children }) {
+  return (
+    <div>
+      <h3 style={{
+        fontFamily: 'var(--font-display)',
+        fontStyle: 'italic',
+        fontSize: 11,
+        color: 'var(--text-tertiary)',
+        letterSpacing: '0.08em',
+        textTransform: 'uppercase',
+        marginBottom: 12,
+        marginTop: 4,
+      }}>{title}</h3>
+      <div className="flex flex-col" style={{ gap: 14 }}>{children}</div>
+    </div>
+  )
+}
+
+function Field({ label, value, href }) {
+  if (!value) return null
+  return (
+    <div>
+      <span style={{ fontSize: '11px', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: 'var(--font-body)', display: 'block', marginBottom: 3 }}>
+        {label}
+      </span>
+      {href ? (
+        <a href={href} style={{ fontSize: 14, color: 'var(--accent)', fontFamily: 'var(--font-body)', textDecoration: 'none' }}>
+          {value}
+        </a>
+      ) : (
+        <span style={{ fontSize: 14, color: 'var(--text-primary)', fontFamily: 'var(--font-body)', lineHeight: 1.5, display: 'block' }}>
+          {value}
+        </span>
+      )}
     </div>
   )
 }
@@ -241,38 +323,29 @@ function SummaryStrip({ stats }) {
 // ── Interaction log ───────────────────────────────────────────────────────────
 function InteractionLog({ interactions, onAddInteraction }) {
   return (
-    <div className="flex flex-col gap-0">
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-[12px] font-semibold text-[#555] uppercase tracking-wider">
-          Interactions
-        </h3>
-        <span className="text-[11px] text-[#3a3a3a]">{interactions.length} total</span>
+    <div>
+      <div className="flex items-center justify-between" style={{ marginBottom: 12, marginTop: 4 }}>
+        <h3 style={{
+          fontFamily: 'var(--font-display)',
+          fontStyle: 'italic',
+          fontSize: 11,
+          color: 'var(--text-tertiary)',
+          letterSpacing: '0.08em',
+          textTransform: 'uppercase',
+        }}>Interactions</h3>
+        <span style={{ fontSize: 11, color: 'var(--text-tertiary)', fontFamily: 'var(--font-body)' }}>
+          {interactions.length} total
+        </span>
       </div>
 
-      {interactions.length === 0 ? (
-        <div className="bg-[#111] border border-[#1f1f1f] rounded-[12px] px-4 py-6 text-center">
-          <p className="text-[13px] text-[#444]">No interactions logged yet</p>
-        </div>
-      ) : (
-        <div className="flex flex-col gap-2">
-          {/* Show newest first */}
-          {[...interactions].reverse().map((entry, idx) => (
-            <InteractionEntry key={entry.id} entry={entry} isLatest={idx === 0} />
-          ))}
-        </div>
-      )}
+      <div className="flex flex-col" style={{ gap: 10 }}>
+        {[...interactions].reverse().map((entry, idx) => (
+          <InteractionEntry key={entry.id} entry={entry} isLatest={idx === 0} />
+        ))}
+      </div>
 
-      <button
-        onClick={onAddInteraction}
-        className="mt-3 w-full flex items-center justify-center gap-2 h-10 bg-[#111] border border-dashed
-          border-[#2a2a2a] rounded-[10px] text-[13px] text-[#555] hover:text-[#e5e5e5] hover:border-[#3a3a3a]
-          transition-all active:scale-[0.98]"
-      >
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
-        </svg>
-        Add interaction
-      </button>
+      {/* Add interaction button */}
+      <AddInteractionBtn onClick={onAddInteraction} />
     </div>
   )
 }
@@ -281,50 +354,69 @@ function InteractionEntry({ entry, isLatest }) {
   const [showRaw, setShowRaw] = useState(false)
 
   return (
-    <div className={`bg-[#111] border rounded-[12px] overflow-hidden transition-colors
-      ${isLatest ? 'border-[#2a2a2a]' : 'border-[#1f1f1f]'}`}>
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-2.5 border-b border-[#1a1a1a]">
-        <span className="text-[12px] font-medium text-[#888]">{formatDateLong(entry.date)}</span>
+    <div style={{
+      background: 'var(--bg-card)',
+      border: '1px solid var(--border)',
+      borderRadius: 10,
+      overflow: 'hidden',
+    }}>
+      <div className="flex items-center justify-between" style={{ padding: '12px 14px 10px' }}>
+        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-body)' }}>
+          {formatDateLong(entry.date)}
+        </span>
         {isLatest && (
-          <span className="text-[10px] text-[#c8a97e] font-medium uppercase tracking-wider">Latest</span>
+          <span style={{
+            padding: '2px 8px',
+            borderRadius: 20,
+            background: 'var(--accent)',
+            color: 'var(--bg-primary)',
+            fontSize: 9,
+            fontWeight: 700,
+            fontFamily: 'var(--font-body)',
+            letterSpacing: '0.06em',
+            textTransform: 'uppercase',
+          }}>Latest</span>
         )}
       </div>
 
-      {/* Discussion */}
-      <div className="px-4 py-3">
-        <p className="text-[13px] text-[#ccc] leading-relaxed">{entry.discussion}</p>
-      </div>
+      <p style={{ fontSize: 14, color: 'var(--text-secondary)', fontFamily: 'var(--font-body)', lineHeight: 1.55, padding: '0 14px 10px' }}>
+        {entry.discussion}
+      </p>
 
-      {/* Follow-up */}
       {entry.follow_up && (
-        <div className="px-4 pb-3 flex items-start gap-2">
-          <FlagIcon className="text-[#c8a97e] mt-0.5 flex-shrink-0" size={12} />
-          <p className="text-[12px] text-[#c8a97e] leading-relaxed">{entry.follow_up}</p>
+        <div className="flex items-start gap-2" style={{ padding: '0 14px 12px' }}>
+          <FlagIcon style={{ color: 'var(--accent)', marginTop: 2, flexShrink: 0 }} />
+          <p style={{ fontSize: 13, color: 'var(--accent)', fontFamily: 'var(--font-body)', lineHeight: 1.5 }}>
+            {entry.follow_up}
+          </p>
         </div>
       )}
 
-      {/* Show raw note toggle */}
       {entry.raw_note && (
-        <div className="border-t border-[#1a1a1a]">
+        <div style={{ borderTop: '1px solid var(--border)' }}>
           <button
             onClick={() => setShowRaw(v => !v)}
-            className="w-full flex items-center gap-2 px-4 py-2 text-[11px] text-[#444] hover:text-[#666] transition-colors"
+            className="flex items-center gap-2 w-full"
+            style={{ padding: '9px 14px', fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-body)', transition: 'color 150ms' }}
+            onMouseEnter={e => e.currentTarget.style.color = 'var(--text-secondary)'}
+            onMouseLeave={e => e.currentTarget.style.color = 'var(--text-tertiary)'}
           >
-            <svg
-              width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-              className={`transition-transform ${showRaw ? 'rotate-90' : ''}`}
-            >
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+              style={{ transition: 'transform 150ms', transform: showRaw ? 'rotate(90deg)' : 'rotate(0deg)' }}>
               <polyline points="9 18 15 12 9 6" />
             </svg>
             {showRaw ? 'Hide raw note' : 'Show raw note'}
           </button>
           {showRaw && (
-            <div className="px-4 pb-3">
-              <p className="text-[12px] text-[#444] leading-relaxed italic font-mono whitespace-pre-wrap">
-                {entry.raw_note}
-              </p>
-            </div>
+            <p style={{
+              padding: '0 14px 12px',
+              fontSize: 12,
+              color: 'var(--text-tertiary)',
+              fontFamily: 'monospace',
+              lineHeight: 1.6,
+              fontStyle: 'italic',
+              whiteSpace: 'pre-wrap',
+            }}>{entry.raw_note}</p>
           )}
         </div>
       )}
@@ -332,7 +424,33 @@ function InteractionEntry({ entry, isLatest }) {
   )
 }
 
-// ── Add Interaction bottom sheet ──────────────────────────────────────────────
+function AddInteractionBtn({ onClick }) {
+  const [hovered, setHovered] = useState(false)
+  return (
+    <button
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      className="w-full flex items-center justify-center gap-2 active:scale-[0.98]"
+      style={{
+        marginTop: 10,
+        height: 48,
+        borderRadius: 10,
+        border: `1px dashed ${hovered ? 'var(--accent)' : 'var(--border)'}`,
+        background: 'transparent',
+        color: hovered ? 'var(--accent)' : 'var(--text-secondary)',
+        fontSize: 13,
+        fontFamily: 'var(--font-body)',
+        transition: 'all 150ms',
+      }}
+    >
+      <MicIcon />
+      Add interaction
+    </button>
+  )
+}
+
+// ── Add Interaction Sheet ─────────────────────────────────────────────────────
 function AddInteractionSheet({ contactId, onSave, onClose }) {
   const today = new Date().toISOString().split('T')[0]
   const [date, setDate] = useState(today)
@@ -348,7 +466,6 @@ function AddInteractionSheet({ contactId, onSave, onClose }) {
   async function handleStructureAndSave() {
     if (!text.trim()) return
     setLoading(true)
-    // Simulate 1s Claude structuring
     await new Promise(r => setTimeout(r, 1000))
     const entry = addMockInteraction(contactId, {
       date,
@@ -362,45 +479,41 @@ function AddInteractionSheet({ contactId, onSave, onClose }) {
 
   return (
     <>
-      {/* Backdrop */}
-      <div className="fixed inset-0 bg-black/60 z-40" onClick={onClose} />
-
-      {/* Sheet */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-[#111] border-t border-[#2a2a2a] rounded-t-[20px] p-5 flex flex-col gap-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-[16px] font-semibold text-[#e5e5e5]">Add Interaction</h3>
-          <button onClick={onClose} className="text-[#555] hover:text-[#888] text-xl leading-none">×</button>
+      <div className="fixed inset-0 z-40" style={{ background: 'rgba(0,0,0,0.6)' }} onClick={onClose} />
+      <div className="fixed bottom-0 left-0 right-0 z-50 slide-up"
+        style={{ background: 'var(--bg-secondary)', borderTop: '1px solid var(--border)', borderRadius: '16px 16px 0 0', padding: '20px 16px 32px' }}>
+        <div className="flex justify-center mb-3">
+          <div style={{ width: 36, height: 4, borderRadius: 2, background: 'var(--border)' }} />
+        </div>
+        <div className="flex items-center justify-between" style={{ marginBottom: 20 }}>
+          <h3 style={{ fontSize: 17, fontFamily: 'var(--font-display)', fontStyle: 'italic', color: 'var(--text-primary)' }}>
+            Add Interaction
+          </h3>
+          <button onClick={onClose} style={{ fontSize: 24, color: 'var(--text-tertiary)', lineHeight: 1 }}>×</button>
         </div>
 
         {/* Date */}
-        <div className="flex flex-col gap-1">
-          <label className="text-[11px] font-medium text-[#555] uppercase tracking-wider">Date</label>
-          <input
-            type="date"
-            value={date}
-            onChange={e => setDate(e.target.value)}
-            className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-[8px] px-3 h-10 text-[14px]
-              text-[#e5e5e5] outline-none focus:border-[#c8a97e]/50"
-          />
+        <div style={{ marginBottom: 16 }}>
+          <label style={{ fontSize: 11, color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: 'var(--font-body)', display: 'block', marginBottom: 4 }}>Date</label>
+          <input type="date" value={date} onChange={e => setDate(e.target.value)}
+            style={{ width: '100%', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8, padding: '0 12px', height: 40, fontSize: 14, color: 'var(--text-primary)', fontFamily: 'var(--font-body)', outline: 'none' }} />
         </div>
 
         {/* Notes */}
-        <div className="flex flex-col gap-1">
-          <div className="flex items-center justify-between">
-            <label className="text-[11px] font-medium text-[#555] uppercase tracking-wider">Notes</label>
+        <div style={{ marginBottom: 20 }}>
+          <div className="flex items-center justify-between" style={{ marginBottom: 4 }}>
+            <label style={{ fontSize: 11, color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: 'var(--font-body)' }}>Notes</label>
             {speechSupported && (
-              <button
-                onClick={toggleSpeech}
-                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[12px] transition-all
-                  ${listening
-                    ? 'bg-[#e05c5c]/20 text-[#e05c5c] border border-[#e05c5c]/30'
-                    : 'bg-[#1a1a1a] text-[#888] border border-[#2a2a2a] hover:text-[#e5e5e5]'}`}
-              >
-                {listening ? (
-                  <><span className="w-2 h-2 rounded-full bg-[#e05c5c] animate-pulse" /> Stop</>
-                ) : (
-                  <><MicIcon /> Dictate</>
-                )}
+              <button onClick={toggleSpeech}
+                className="flex items-center gap-1.5"
+                style={{
+                  padding: '3px 10px', borderRadius: 20, fontSize: 12, fontFamily: 'var(--font-body)',
+                  border: `1px solid ${listening ? 'rgba(192,97,74,0.4)' : 'var(--border)'}`,
+                  background: listening ? 'rgba(192,97,74,0.12)' : 'var(--bg-card)',
+                  color: listening ? 'var(--accent-danger)' : 'var(--text-secondary)',
+                  transition: 'all 150ms',
+                }}>
+                {listening ? <><span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--accent-danger)', display: 'inline-block', animation: 'pulse 1s infinite' }} /> Stop</> : <><MicIcon /> Dictate</>}
               </button>
             )}
           </div>
@@ -410,19 +523,13 @@ function AddInteractionSheet({ contactId, onSave, onClose }) {
             placeholder="What was discussed, any follow-up actions…"
             rows={4}
             autoFocus
-            className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-[8px] px-3 py-2.5 text-[14px]
-              text-[#e5e5e5] placeholder-[#444] outline-none focus:border-[#c8a97e]/50 resize-none"
+            style={{ width: '100%', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 12px', fontSize: 14, color: 'var(--text-primary)', fontFamily: 'var(--font-body)', outline: 'none', resize: 'none', lineHeight: 1.5 }}
+            onFocus={e => e.target.style.borderColor = 'rgba(201,168,108,0.4)'}
+            onBlur={e => e.target.style.borderColor = 'var(--border)'}
           />
         </div>
 
-        <Button
-          variant="primary"
-          size="lg"
-          fullWidth
-          onClick={handleStructureAndSave}
-          loading={loading}
-          disabled={!text.trim()}
-        >
+        <Button variant="primary" size="lg" fullWidth onClick={handleStructureAndSave} loading={loading} disabled={!text.trim()}>
           Structure & Save
         </Button>
       </div>
@@ -430,41 +537,14 @@ function AddInteractionSheet({ contactId, onSave, onClose }) {
   )
 }
 
-// ── Shared subcomponents ──────────────────────────────────────────────────────
-function InfoSection({ title, children }) {
-  const kids = Array.isArray(children) ? children : [children]
-  const hasContent = kids.some(c => c && c.props?.value)
-  if (!hasContent) return null
-
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function BackBtn({ onClick }) {
   return (
-    <div className="bg-[#111] border border-[#1f1f1f] rounded-[12px] overflow-hidden">
-      <div className="px-4 py-2.5 border-b border-[#1f1f1f]">
-        <h3 className="text-[11px] font-semibold text-[#444] uppercase tracking-wider">{title}</h3>
-      </div>
-      <div className="divide-y divide-[#1a1a1a]">{children}</div>
-    </div>
-  )
-}
-
-function InfoRow({ label, value, href }) {
-  if (!value) return null
-  return (
-    <div className="px-4 py-2.5 flex flex-col gap-0.5">
-      <span className="text-[10px] text-[#444] uppercase tracking-wider">{label}</span>
-      {href ? (
-        <a href={href} className="text-[13px] text-[#c8a97e] leading-relaxed underline decoration-[#444] underline-offset-2">
-          {value}
-        </a>
-      ) : (
-        <span className="text-[13px] text-[#e5e5e5] leading-relaxed">{value}</span>
-      )}
-    </div>
-  )
-}
-
-function BackButton({ onClick }) {
-  return (
-    <button onClick={onClick} className="text-[#888] flex items-center gap-1 text-[14px] hover:text-[#e5e5e5] transition-colors">
+    <button onClick={onClick} className="flex items-center gap-1"
+      style={{ fontSize: 14, color: 'var(--text-secondary)', fontFamily: 'var(--font-body)', transition: 'color 150ms' }}
+      onMouseEnter={e => e.currentTarget.style.color = 'var(--text-primary)'}
+      onMouseLeave={e => e.currentTarget.style.color = 'var(--text-secondary)'}
+    >
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         <polyline points="15 18 9 12 15 6" />
       </svg>
@@ -473,28 +553,22 @@ function BackButton({ onClick }) {
   )
 }
 
-function MailIcon() {
-  return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" /></svg>
-}
-function PhoneIcon() {
-  return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.18 2 2 0 0 1 3.59 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.96a16 16 0 0 0 6.13 6.13l1.02-.93a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z" /></svg>
-}
-function FlagIcon({ className = 'text-[#555]', size = 13 }) {
-  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className}><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" /><line x1="4" y1="22" x2="4" y2="15" /></svg>
-}
-function MicIcon() {
-  return <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" /><path d="M19 10v2a7 7 0 0 1-14 0v-2" /><line x1="12" y1="19" x2="12" y2="23" /><line x1="8" y1="23" x2="16" y2="23" /></svg>
-}
+function MailIcon() { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" /></svg> }
+function PhoneIcon() { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.18 2 2 0 0 1 3.59 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.96a16 16 0 0 0 6.13 6.13l1.02-.93a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z" /></svg> }
+function FlagIcon({ style }) { return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={style}><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" /><line x1="4" y1="22" x2="4" y2="15" /></svg> }
+function MicIcon() { return <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" /><path d="M19 10v2a7 7 0 0 1-14 0v-2" /><line x1="12" y1="19" x2="12" y2="23" /><line x1="8" y1="23" x2="16" y2="23" /></svg> }
+function CardPlaceholderIcon() { return <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" strokeWidth="1.5"><rect x="2" y="5" width="20" height="14" rx="3" /><line x1="6" y1="10" x2="13" y2="10" /><line x1="6" y1="14" x2="9" y2="14" /></svg> }
 
-function formatDateLong(dateStr) {
-  if (!dateStr) return ''
-  const d = new Date(dateStr)
-  if (isNaN(d)) return dateStr
+function formatDateLong(s) {
+  if (!s) return ''
+  const d = new Date(s)
+  if (isNaN(d)) return s
   return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
 }
-function formatDateShort(dateStr) {
-  if (!dateStr) return ''
-  const d = new Date(dateStr)
-  if (isNaN(d)) return dateStr
+function formatDateShort(s) {
+  if (!s) return ''
+  const d = new Date(s)
+  if (isNaN(d)) return s
   return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
 }
+

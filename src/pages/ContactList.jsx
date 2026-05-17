@@ -2,15 +2,12 @@ import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Layout, { TopBar } from '../components/Layout.jsx'
 import { getContacts } from '../lib/supabase.js'
+import { industryColor, hex2rgba } from '../lib/industryColors.js'
 
 const INDUSTRIES = ['Shipping', 'Legal', 'Finance', 'Government', 'Port Authority', 'Technology', 'Insurance', 'Trade Association', 'Academic', 'Other']
 const RELATIONSHIP_TYPES = ['Client', 'Counterparty', 'Regulator', 'Industry peer', 'Vendor/supplier', 'Advisor/counsel', 'Internal colleague', 'Investor', 'Media', 'Other']
 const GEOGRAPHIES = ['Singapore', 'China', 'Europe', 'Middle East', 'South Asia', 'Southeast Asia', 'Americas', 'Africa', 'Global']
-
-const SORT_OPTIONS = [
-  { value: 'date_met', label: 'Date met' },
-  { value: 'last_seen', label: 'Last seen' },
-]
+const SORT_OPTIONS = [{ value: 'date_met', label: 'Date met' }, { value: 'last_seen', label: 'Last seen' }]
 
 export default function ContactList() {
   const navigate = useNavigate()
@@ -21,6 +18,7 @@ export default function ContactList() {
   const [sort, setSort] = useState('date_met')
   const [viewMode, setViewMode] = useState('list')
   const [showFilters, setShowFilters] = useState(false)
+  const [showAddSheet, setShowAddSheet] = useState(false)
 
   const load = useCallback(async () => {
     try {
@@ -55,27 +53,39 @@ export default function ContactList() {
     : {}
 
   const activeFilterCount = Object.values(filters).filter(Boolean).length
-
-  function setFilter(key, val) {
-    setFilters(f => ({ ...f, [key]: f[key] === val ? '' : val }))
-  }
+  function setFilter(key, val) { setFilters(f => ({ ...f, [key]: f[key] === val ? '' : val })) }
 
   return (
     <Layout>
+      {showAddSheet && (
+        <AddSheet
+          onClose={() => setShowAddSheet(false)}
+          onScan={() => { setShowAddSheet(false); navigate('/add?mode=scan') }}
+          onManual={() => { setShowAddSheet(false); navigate('/add?mode=manual') }}
+          onImport={() => { setShowAddSheet(false); navigate('/import') }}
+        />
+      )}
+
       <TopBar
         title="CardStack"
+        titleFont="display"
         right={
           <div className="flex items-center gap-3">
             <button
               onClick={() => navigate('/import')}
-              className="text-[#555] hover:text-[#888] transition-colors"
               title="Import contacts"
+              style={{ color: 'var(--text-tertiary)', transition: 'color 150ms' }}
+              onMouseEnter={e => e.currentTarget.style.color = 'var(--text-secondary)'}
+              onMouseLeave={e => e.currentTarget.style.color = 'var(--text-tertiary)'}
             >
               <ImportIcon />
             </button>
             <button
               onClick={() => setViewMode(v => v === 'list' ? 'timeline' : 'list')}
-              className={`transition-colors ${viewMode === 'timeline' ? 'text-[#c8a97e]' : 'text-[#555] hover:text-[#888]'}`}
+              style={{
+                color: viewMode === 'timeline' ? 'var(--accent)' : 'var(--text-tertiary)',
+                transition: 'color 150ms',
+              }}
             >
               {viewMode === 'list' ? <TimelineIcon /> : <ListIcon />}
             </button>
@@ -84,51 +94,87 @@ export default function ContactList() {
       />
 
       {/* Search + filter bar */}
-      <div className="px-4 pt-3 pb-2 flex flex-col gap-2 border-b border-[#1f1f1f]">
+      <div style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg-secondary)' }}
+        className="px-4 pt-3 pb-3">
         <div className="flex gap-2">
           <div className="flex-1 relative">
-            <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-[#444]" />
+            <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Search contacts…"
-              className="w-full bg-[#111] border border-[#2a2a2a] rounded-[8px] pl-9 pr-3 h-9
-                text-[14px] text-[#e5e5e5] placeholder-[#444] outline-none"
+              style={{
+                width: '100%',
+                background: 'var(--bg-card)',
+                border: '1px solid var(--border)',
+                borderRadius: '10px',
+                height: '38px',
+                paddingLeft: '36px',
+                paddingRight: '12px',
+                fontSize: '14px',
+                color: 'var(--text-primary)',
+                fontFamily: 'var(--font-body)',
+                outline: 'none',
+              }}
             />
           </div>
           <button
             onClick={() => setShowFilters(v => !v)}
-            className={`flex items-center gap-1.5 px-3 h-9 rounded-[8px] text-[13px] border transition-colors
-              ${showFilters || activeFilterCount > 0
-                ? 'bg-[#c8a97e]/10 border-[#c8a97e]/30 text-[#c8a97e]'
-                : 'bg-[#111] border-[#2a2a2a] text-[#555] hover:text-[#888]'}`}
+            style={{
+              background: showFilters || activeFilterCount > 0 ? 'rgba(201,168,108,0.1)' : 'var(--bg-card)',
+              border: `1px solid ${showFilters || activeFilterCount > 0 ? 'rgba(201,168,108,0.35)' : 'var(--border)'}`,
+              color: showFilters || activeFilterCount > 0 ? 'var(--accent)' : 'var(--text-tertiary)',
+              borderRadius: '10px',
+              width: '38px',
+              height: '38px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+              transition: 'all 150ms',
+              position: 'relative',
+            }}
           >
             <FilterIcon />
             {activeFilterCount > 0 && (
-              <span className="w-4 h-4 rounded-full bg-[#c8a97e] text-[#0a0a0a] text-[10px] font-bold flex items-center justify-center">
-                {activeFilterCount}
-              </span>
+              <span style={{
+                position: 'absolute',
+                top: '-4px',
+                right: '-4px',
+                width: '16px',
+                height: '16px',
+                borderRadius: '50%',
+                background: 'var(--accent)',
+                color: 'var(--bg-primary)',
+                fontSize: '10px',
+                fontWeight: 700,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}>{activeFilterCount}</span>
             )}
           </button>
         </div>
 
         {showFilters && (
-          <div className="flex flex-col gap-2 pb-1 fade-in">
+          <div className="flex flex-col gap-2 mt-3 fade-in">
             {/* Sort */}
             <div className="flex items-center gap-2">
-              <span className="text-[11px] text-[#444] flex-shrink-0 w-16">Sort</span>
-              <div className="flex gap-1.5">
+              <span style={{ fontSize: '11px', color: 'var(--text-tertiary)', width: '56px', flexShrink: 0, fontFamily: 'var(--font-body)' }}>Sort</span>
+              <div className="flex gap-2">
                 {SORT_OPTIONS.map(opt => (
-                  <button
-                    key={opt.value}
-                    onClick={() => setSort(opt.value)}
-                    className={`flex-shrink-0 px-2.5 py-1 rounded-full text-[11px] border transition-all
-                      ${sort === opt.value
-                        ? 'bg-[#c8a97e]/15 border-[#c8a97e]/40 text-[#c8a97e]'
-                        : 'bg-[#111] border-[#2a2a2a] text-[#555] hover:text-[#888]'}`}
-                  >
-                    {opt.label}
-                  </button>
+                  <button key={opt.value} onClick={() => setSort(opt.value)}
+                    style={{
+                      padding: '4px 12px',
+                      borderRadius: '20px',
+                      fontSize: '12px',
+                      fontFamily: 'var(--font-body)',
+                      border: `1px solid ${sort === opt.value ? 'rgba(201,168,108,0.4)' : 'var(--border)'}`,
+                      background: sort === opt.value ? 'rgba(201,168,108,0.12)' : 'var(--bg-card)',
+                      color: sort === opt.value ? 'var(--accent)' : 'var(--text-secondary)',
+                      transition: 'all 150ms',
+                    }}
+                  >{opt.label}</button>
                 ))}
               </div>
             </div>
@@ -138,140 +184,248 @@ export default function ContactList() {
             {activeFilterCount > 0 && (
               <button
                 onClick={() => setFilters({ industry: '', relationship_type: '', geography: '' })}
-                className="self-start text-[12px] text-[#555] hover:text-[#888] transition-colors"
-              >
-                Clear filters
-              </button>
+                style={{ alignSelf: 'flex-start', fontSize: '12px', color: 'var(--text-tertiary)', fontFamily: 'var(--font-body)', transition: 'color 150ms' }}
+                onMouseEnter={e => e.currentTarget.style.color = 'var(--text-secondary)'}
+                onMouseLeave={e => e.currentTarget.style.color = 'var(--text-tertiary)'}
+              >Clear filters</button>
             )}
           </div>
         )}
       </div>
 
       {/* Count + sort indicator */}
-      <div className="px-4 py-2 flex items-center justify-between">
-        <span className="text-[12px] text-[#444]">
+      <div className="flex items-center justify-between px-4 py-2.5">
+        <span style={{ fontSize: '12px', color: 'var(--text-tertiary)', fontFamily: 'var(--font-body)' }}>
           {loading ? '…' : `${contacts.length} contact${contacts.length !== 1 ? 's' : ''}`}
         </span>
-        <span className="text-[11px] text-[#444]">
+        <button
+          onClick={() => setShowFilters(v => !v)}
+          style={{ fontSize: '12px', color: 'var(--accent)', fontFamily: 'var(--font-body)' }}
+        >
           {sort === 'last_seen' ? 'Last seen ↓' : 'Date met ↓'}
           {viewMode === 'timeline' && ' · Timeline'}
-        </span>
+        </button>
       </div>
 
       {/* List */}
       <div className="flex-1 overflow-y-auto pb-24">
-        {loading ? (
-          <SkeletonList />
-        ) : contacts.length === 0 ? (
-          <EmptyState search={search} hasFilters={activeFilterCount > 0} />
-        ) : viewMode === 'list' ? (
-          <div className="px-4 flex flex-col gap-2">
-            {contacts.map(c => (
-              <ContactCard key={c.id} contact={c} sort={sort} onClick={() => navigate(`/contact/${c.id}`)} />
-            ))}
-          </div>
-        ) : (
-          <div className="px-4 flex flex-col gap-5">
-            {Object.entries(timelineGroups).map(([event, group]) => (
-              <div key={event}>
-                <div className="flex items-center gap-2 mb-2">
-                  <h3 className="text-[12px] font-semibold text-[#555] uppercase tracking-wider flex-shrink-0">{event}</h3>
-                  <div className="h-px flex-1 bg-[#1f1f1f]" />
-                  <span className="text-[11px] text-[#444] flex-shrink-0">{group.length}</span>
+        {loading ? <SkeletonList /> : contacts.length === 0
+          ? <EmptyState search={search} hasFilters={activeFilterCount > 0} />
+          : viewMode === 'list'
+            ? contacts.map(c => <ContactRow key={c.id} contact={c} sort={sort} onClick={() => navigate(`/contact/${c.id}`)} />)
+            : Object.entries(timelineGroups).map(([event, group]) => (
+                <div key={event}>
+                  <div className="flex items-center gap-3 px-4 py-3">
+                    <span style={{ fontSize: '11px', fontStyle: 'italic', fontFamily: 'var(--font-display)', color: 'var(--text-tertiary)', flexShrink: 0 }}>{event}</span>
+                    <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
+                    <span style={{ fontSize: '11px', color: 'var(--text-tertiary)', fontFamily: 'var(--font-body)' }}>{group.length}</span>
+                  </div>
+                  {group.map(c => <ContactRow key={c.id} contact={c} sort={sort} onClick={() => navigate(`/contact/${c.id}`)} />)}
                 </div>
-                <div className="flex flex-col gap-2">
-                  {group.map(c => (
-                    <ContactCard key={c.id} contact={c} sort={sort} onClick={() => navigate(`/contact/${c.id}`)} />
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+              ))
+        }
       </div>
 
       {/* FAB */}
-      <div className="fixed bottom-6 right-5">
-        <button
-          onClick={() => navigate('/add')}
-          className="w-14 h-14 rounded-full bg-[#c8a97e] flex items-center justify-center
-            shadow-lg active:scale-90 transition-all hover:bg-[#d4b98a]"
-        >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0a0a0a" strokeWidth="2.5">
-            <line x1="12" y1="5" x2="12" y2="19" />
-            <line x1="5" y1="12" x2="19" y2="12" />
-          </svg>
-        </button>
-      </div>
+      <button
+        onClick={() => setShowAddSheet(true)}
+        className="fixed bottom-6 right-5 w-14 h-14 rounded-full flex items-center justify-center active:scale-90"
+        style={{
+          background: 'var(--accent)',
+          boxShadow: '0 4px 24px rgba(201,168,108,0.25)',
+          transition: 'all 150ms',
+        }}
+      >
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--bg-primary)" strokeWidth="2.5">
+          <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+        </svg>
+      </button>
     </Layout>
   )
 }
 
-function ContactCard({ contact, sort, onClick }) {
+function ContactRow({ contact, sort, onClick }) {
+  const [hovered, setHovered] = useState(false)
   const initials = contact.name
     ? contact.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
     : '?'
-
+  const color = industryColor(contact.industry)
   const interactions = contact.interactions || []
   const lastSeen = interactions.length
     ? [...interactions].sort((a, b) => b.date.localeCompare(a.date))[0].date
     : contact.date_met
-
   const dateToShow = sort === 'last_seen' ? lastSeen : contact.date_met
   const dateLabel = sort === 'last_seen' ? 'Last seen' : null
 
   return (
     <button
       onClick={onClick}
-      className="w-full flex items-center gap-3 bg-[#111] border border-[#1f1f1f] rounded-[12px]
-        px-4 py-3 text-left hover:border-[#2a2a2a] hover:bg-[#131313] transition-all active:scale-[0.98]"
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      className="w-full text-left flex items-center gap-3"
+      style={{
+        background: hovered ? 'var(--bg-card-hover)' : 'var(--bg-card)',
+        borderBottom: '1px solid var(--border)',
+        padding: '14px 16px',
+        transition: 'background 150ms',
+      }}
     >
-      <div className="w-10 h-10 rounded-full bg-[#2a2a2a] flex items-center justify-center flex-shrink-0 overflow-hidden">
-        {contact.card_front_url ? (
-          <img src={contact.card_front_url} alt="" className="w-full h-full object-cover" />
-        ) : (
-          <span className="text-[13px] font-medium text-[#888]">{initials}</span>
-        )}
+      {/* Avatar */}
+      <div
+        className="flex-shrink-0 flex items-center justify-center rounded-full"
+        style={{
+          width: '44px',
+          height: '44px',
+          background: hex2rgba(color, 0.18),
+          border: `1.5px solid ${hex2rgba(color, 0.35)}`,
+        }}
+      >
+        <span style={{
+          fontSize: '14px',
+          fontWeight: 500,
+          color: color,
+          fontFamily: 'var(--font-body)',
+        }}>{initials}</span>
       </div>
+
+      {/* Info */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <span className="text-[14px] font-medium text-[#e5e5e5] truncate">{contact.name || 'Unknown'}</span>
+          <span style={{
+            fontSize: '16px',
+            fontWeight: 600,
+            color: 'var(--text-primary)',
+            fontFamily: 'var(--font-body)',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}>{contact.name || 'Unknown'}</span>
           {contact.follow_up_flag && (
-            <span className="w-1.5 h-1.5 rounded-full bg-[#c8a97e] flex-shrink-0" title="Follow-up pending" />
+            <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: 'var(--accent)', flexShrink: 0 }} />
           )}
         </div>
-        <p className="text-[12px] text-[#555] truncate mt-0.5">
+        <p style={{
+          fontSize: '13px',
+          color: 'var(--text-secondary)',
+          fontFamily: 'var(--font-body)',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+          marginTop: '2px',
+        }}>
           {[contact.title, contact.company].filter(Boolean).join(' · ') || '—'}
         </p>
       </div>
-      <div className="flex-shrink-0 text-right">
-        {dateLabel && <p className="text-[10px] text-[#444]">{dateLabel}</p>}
-        {dateToShow && <span className="text-[11px] text-[#444]">{formatDate(dateToShow)}</span>}
-        {contact.industry && <p className="text-[11px] text-[#555] mt-0.5">{contact.industry}</p>}
+
+      {/* Meta */}
+      <div className="flex-shrink-0 flex flex-col items-end gap-1">
+        {dateLabel && (
+          <span style={{ fontSize: '10px', color: 'var(--text-tertiary)', fontFamily: 'var(--font-body)' }}>{dateLabel}</span>
+        )}
+        {dateToShow && (
+          <span style={{ fontSize: '12px', color: 'var(--text-tertiary)', fontFamily: 'var(--font-body)' }}>
+            {formatDate(dateToShow)}
+          </span>
+        )}
+        {contact.industry && (
+          <span style={{
+            fontSize: '11px',
+            padding: '2px 8px',
+            borderRadius: '20px',
+            background: hex2rgba(color, 0.18),
+            color: color,
+            fontFamily: 'var(--font-body)',
+            whiteSpace: 'nowrap',
+          }}>{contact.industry}</span>
+        )}
         {interactions.length > 0 && (
-          <p className="text-[10px] text-[#3a3a3a] mt-0.5">{interactions.length} interaction{interactions.length !== 1 ? 's' : ''}</p>
+          <span style={{ fontSize: '11px', color: 'var(--text-tertiary)', fontFamily: 'var(--font-body)' }}>
+            {interactions.length} interaction{interactions.length !== 1 ? 's' : ''}
+          </span>
         )}
       </div>
     </button>
   )
 }
 
+function AddSheet({ onClose, onScan, onManual, onImport }) {
+  const options = [
+    { label: 'Scan a card', icon: <CameraIcon />, action: onScan },
+    { label: 'Enter details manually', icon: <PencilIcon />, action: onManual },
+    { label: 'Import from Excel', icon: <UploadIcon />, action: onImport },
+  ]
+  return (
+    <>
+      <div className="fixed inset-0 z-40" style={{ background: 'rgba(0,0,0,0.55)' }} onClick={onClose} />
+      <div
+        className="fixed bottom-0 left-0 right-0 z-50 slide-up"
+        style={{
+          background: 'var(--bg-secondary)',
+          borderTop: '1px solid var(--border)',
+          borderRadius: '16px 16px 0 0',
+          paddingBottom: 'env(safe-area-inset-bottom)',
+        }}
+      >
+        {/* Drag handle */}
+        <div className="flex justify-center pt-3 pb-2">
+          <div style={{ width: '36px', height: '4px', borderRadius: '2px', background: 'var(--border)' }} />
+        </div>
+        <div className="px-4 pb-5 flex flex-col gap-2">
+          {options.map((opt, i) => (
+            <SheetOption key={i} icon={opt.icon} label={opt.label} onTap={opt.action} />
+          ))}
+        </div>
+      </div>
+    </>
+  )
+}
+
+function SheetOption({ icon, label, onTap }) {
+  const [hovered, setHovered] = useState(false)
+  return (
+    <button
+      onClick={onTap}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      className="w-full flex items-center gap-4 active:scale-[0.98]"
+      style={{
+        height: '56px',
+        background: hovered ? 'var(--bg-card-hover)' : 'var(--bg-card)',
+        border: '1px solid var(--border)',
+        borderRadius: '10px',
+        padding: '0 16px',
+        transition: 'all 150ms',
+      }}
+    >
+      <span style={{ color: 'var(--accent)' }}>{icon}</span>
+      <span style={{ flex: 1, fontSize: '15px', color: 'var(--text-primary)', fontFamily: 'var(--font-body)', textAlign: 'left' }}>
+        {label}
+      </span>
+      <ChevronRight />
+    </button>
+  )
+}
+
 function FilterRow({ label, options, active, onSelect }) {
   return (
-    <div className="flex items-center gap-2 overflow-x-auto pb-0.5" style={{ scrollbarWidth: 'none' }}>
-      <span className="text-[11px] text-[#444] flex-shrink-0 w-16">{label}</span>
+    <div className="flex items-center gap-2 overflow-x-auto pb-0.5">
+      <span style={{ fontSize: '11px', color: 'var(--text-tertiary)', width: '56px', flexShrink: 0, fontFamily: 'var(--font-body)' }}>
+        {label}
+      </span>
       <div className="flex gap-1.5">
         {options.map(opt => (
-          <button
-            key={opt}
-            onClick={() => onSelect(opt)}
-            className={`flex-shrink-0 px-2.5 py-1 rounded-full text-[11px] border transition-all
-              ${active === opt
-                ? 'bg-[#c8a97e]/15 border-[#c8a97e]/40 text-[#c8a97e]'
-                : 'bg-[#111] border-[#2a2a2a] text-[#555] hover:text-[#888]'}`}
-          >
-            {opt}
-          </button>
+          <button key={opt} onClick={() => onSelect(opt)} style={{
+            flexShrink: 0,
+            padding: '3px 10px',
+            borderRadius: '20px',
+            fontSize: '11px',
+            fontFamily: 'var(--font-body)',
+            border: `1px solid ${active === opt ? 'rgba(201,168,108,0.4)' : 'var(--border)'}`,
+            background: active === opt ? 'rgba(201,168,108,0.12)' : 'var(--bg-card)',
+            color: active === opt ? 'var(--accent)' : 'var(--text-secondary)',
+            transition: 'all 150ms',
+            whiteSpace: 'nowrap',
+          }}>{opt}</button>
         ))}
       </div>
     </div>
@@ -280,13 +434,13 @@ function FilterRow({ label, options, active, onSelect }) {
 
 function SkeletonList() {
   return (
-    <div className="px-4 flex flex-col gap-2">
+    <div>
       {[1, 2, 3, 4, 5].map(i => (
-        <div key={i} className="flex items-center gap-3 bg-[#111] border border-[#1f1f1f] rounded-[12px] px-4 py-3">
-          <div className="w-10 h-10 rounded-full skeleton flex-shrink-0" />
+        <div key={i} className="flex items-center gap-3 px-4 py-3.5" style={{ borderBottom: '1px solid var(--border)' }}>
+          <div className="skeleton rounded-full flex-shrink-0" style={{ width: 44, height: 44 }} />
           <div className="flex-1 flex flex-col gap-2">
-            <div className="h-3.5 skeleton rounded-full w-32" />
-            <div className="h-3 skeleton rounded-full w-48" />
+            <div className="skeleton rounded" style={{ height: 14, width: 130 }} />
+            <div className="skeleton rounded" style={{ height: 12, width: 180 }} />
           </div>
         </div>
       ))}
@@ -297,46 +451,50 @@ function SkeletonList() {
 function EmptyState({ search, hasFilters }) {
   return (
     <div className="flex flex-col items-center justify-center py-20 px-8 gap-3">
-      <div className="w-12 h-12 rounded-full bg-[#1a1a1a] flex items-center justify-center">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#444" strokeWidth="1.5">
+      <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'var(--bg-card)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" strokeWidth="1.5">
           <rect x="3" y="5" width="18" height="14" rx="3" />
-          <line x1="7" y1="10" x2="14" y2="10" />
-          <line x1="7" y1="14" x2="11" y2="14" />
+          <line x1="7" y1="10" x2="14" y2="10" /><line x1="7" y1="14" x2="11" y2="14" />
         </svg>
       </div>
-      <p className="text-[#555] text-[14px] text-center">
+      <p style={{ fontSize: '14px', color: 'var(--text-secondary)', fontFamily: 'var(--font-body)', textAlign: 'center' }}>
         {search || hasFilters ? 'No contacts match' : 'No contacts yet'}
       </p>
-      {!search && !hasFilters && (
-        <p className="text-[#444] text-[13px] text-center">Tap + to add your first contact</p>
-      )}
     </div>
   )
 }
 
-function formatDate(dateStr) {
-  if (!dateStr) return ''
-  const d = new Date(dateStr)
-  if (isNaN(d)) return dateStr
+function formatDate(s) {
+  if (!s) return ''
+  const d = new Date(s)
+  if (isNaN(d)) return s
   return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: '2-digit' })
 }
 
 function SearchIcon({ className }) {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className}>
-      <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
-    </svg>
-  )
+  return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" strokeWidth="2" className={className}><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" /></svg>
 }
 function FilterIcon() {
   return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" /></svg>
 }
 function ListIcon() {
-  return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" /><line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" /></svg>
+  return <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" /><line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" /></svg>
 }
 function TimelineIcon() {
-  return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="2" x2="12" y2="22" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg>
+  return <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="2" x2="12" y2="22" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg>
 }
 function ImportIcon() {
   return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
+}
+function CameraIcon() {
+  return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" /><circle cx="12" cy="13" r="4" /></svg>
+}
+function PencilIcon() {
+  return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" /></svg>
+}
+function UploadIcon() {
+  return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
+}
+function ChevronRight() {
+  return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" strokeWidth="2"><polyline points="9 18 15 12 9 6" /></svg>
 }

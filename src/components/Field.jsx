@@ -1,30 +1,59 @@
-export default function Field({ label, value, onChange, placeholder, type = 'text', multiline = false, className = '' }) {
-  const inputClass = `w-full bg-[#111] border border-[#2a2a2a] rounded-[8px] px-3 text-[14px]
-    text-[#e5e5e5] placeholder-[#444] outline-none transition-colors
-    focus:border-[#c8a97e]/60 focus:bg-[#131313]`
+import React from 'react'
 
+const inputStyle = {
+  width: '100%',
+  background: 'var(--bg-card)',
+  border: '1px solid var(--border)',
+  borderRadius: '8px',
+  padding: '0 12px',
+  height: '40px',
+  fontSize: '14px',
+  color: 'var(--text-primary)',
+  fontFamily: 'var(--font-body)',
+  outline: 'none',
+  transition: 'border-color 150ms ease',
+}
+
+const labelStyle = {
+  fontSize: '11px',
+  fontWeight: 500,
+  color: 'var(--text-tertiary)',
+  textTransform: 'uppercase',
+  letterSpacing: '0.06em',
+  fontFamily: 'var(--font-body)',
+  marginBottom: '4px',
+  display: 'block',
+}
+
+export default function Field({ label, value, onChange, placeholder, type = 'text', multiline = false, className = '' }) {
   return (
-    <div className={`flex flex-col gap-1 ${className}`}>
-      {label && (
-        <label className="text-[11px] font-medium text-[#555] uppercase tracking-wider px-0.5">
-          {label}
-        </label>
-      )}
+    <div className={`flex flex-col ${className}`}>
+      {label && <label style={labelStyle}>{label}</label>}
       {multiline ? (
         <textarea
           value={value || ''}
-          onChange={(e) => onChange?.(e.target.value)}
+          onChange={e => onChange?.(e.target.value)}
           placeholder={placeholder}
           rows={3}
-          className={`${inputClass} py-2.5 resize-none`}
+          style={{
+            ...inputStyle,
+            height: 'auto',
+            padding: '10px 12px',
+            resize: 'none',
+            lineHeight: '1.5',
+          }}
+          onFocus={e => e.target.style.borderColor = 'rgba(201,168,108,0.5)'}
+          onBlur={e => e.target.style.borderColor = 'var(--border)'}
         />
       ) : (
         <input
           type={type}
           value={value || ''}
-          onChange={(e) => onChange?.(e.target.value)}
+          onChange={e => onChange?.(e.target.value)}
           placeholder={placeholder}
-          className={`${inputClass} h-10`}
+          style={{ ...inputStyle, '--placeholder-color': 'var(--text-tertiary)' }}
+          onFocus={e => e.target.style.borderColor = 'rgba(201,168,108,0.5)'}
+          onBlur={e => e.target.style.borderColor = 'var(--border)'}
         />
       )}
     </div>
@@ -33,22 +62,21 @@ export default function Field({ label, value, onChange, placeholder, type = 'tex
 
 export function SelectField({ label, value, onChange, options, className = '' }) {
   return (
-    <div className={`flex flex-col gap-1 ${className}`}>
-      {label && (
-        <label className="text-[11px] font-medium text-[#555] uppercase tracking-wider px-0.5">
-          {label}
-        </label>
-      )}
+    <div className={`flex flex-col ${className}`}>
+      {label && <label style={labelStyle}>{label}</label>}
       <select
         value={value || ''}
-        onChange={(e) => onChange?.(e.target.value)}
-        className="w-full bg-[#111] border border-[#2a2a2a] rounded-[8px] px-3 h-10 text-[14px]
-          text-[#e5e5e5] outline-none focus:border-[#c8a97e]/60 appearance-none"
+        onChange={e => onChange?.(e.target.value)}
+        style={{
+          ...inputStyle,
+          appearance: 'none',
+          cursor: 'pointer',
+        }}
+        onFocus={e => e.target.style.borderColor = 'rgba(201,168,108,0.5)'}
+        onBlur={e => e.target.style.borderColor = 'var(--border)'}
       >
         <option value="">—</option>
-        {options.map((opt) => (
-          <option key={opt} value={opt}>{opt}</option>
-        ))}
+        {options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
       </select>
     </div>
   )
@@ -59,46 +87,65 @@ export function TagsField({ label, tags, onChange }) {
 
   function addTag(tag) {
     const t = tag.trim().toLowerCase()
-    if (t && !tags.includes(t)) {
-      onChange([...tags, t])
-    }
+    if (t && !tags.includes(t)) onChange([...tags, t])
     setInput('')
   }
-
-  function removeTag(tag) {
-    onChange(tags.filter((t) => t !== tag))
-  }
+  function removeTag(tag) { onChange(tags.filter(t => t !== tag)) }
 
   return (
-    <div className="flex flex-col gap-1">
-      {label && (
-        <label className="text-[11px] font-medium text-[#555] uppercase tracking-wider px-0.5">
-          {label}
-        </label>
-      )}
-      <div className="flex flex-wrap gap-1.5 min-h-10 bg-[#111] border border-[#2a2a2a] rounded-[8px] p-2">
-        {tags.map((tag) => (
-          <span key={tag} className="flex items-center gap-1 bg-[#2a2a2a] rounded-full px-2.5 py-0.5 text-[12px] text-[#aaa]">
+    <div className="flex flex-col">
+      {label && <label style={labelStyle}>{label}</label>}
+      <div style={{
+        background: 'var(--bg-card)',
+        border: '1px solid var(--border)',
+        borderRadius: '8px',
+        padding: '8px 10px',
+        display: 'flex',
+        flexWrap: 'wrap',
+        gap: '6px',
+        minHeight: '40px',
+        alignItems: 'center',
+      }}>
+        {tags.map(tag => (
+          <span key={tag} style={{
+            background: 'rgba(122,101,64,0.2)',
+            border: '1px solid var(--accent-dim)',
+            borderRadius: '20px',
+            padding: '3px 10px',
+            fontSize: '11px',
+            color: 'var(--accent)',
+            fontFamily: 'var(--font-body)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '5px',
+          }}>
             {tag}
-            <button onClick={() => removeTag(tag)} className="text-[#555] hover:text-[#e5e5e5] transition-colors">×</button>
+            <button
+              onClick={() => removeTag(tag)}
+              style={{ color: 'var(--text-tertiary)', lineHeight: 1, cursor: 'pointer', background: 'none', border: 'none', padding: 0, fontSize: '14px' }}
+            >×</button>
           </span>
         ))}
         <input
           value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ',') {
-              e.preventDefault()
-              addTag(input)
-            }
+          onChange={e => setInput(e.target.value)}
+          onKeyDown={e => {
+            if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); addTag(input) }
           }}
           onBlur={() => input && addTag(input)}
           placeholder={tags.length === 0 ? 'Add tags…' : ''}
-          className="flex-1 min-w-20 bg-transparent text-[14px] text-[#e5e5e5] placeholder-[#444] outline-none"
+          style={{
+            flex: 1,
+            minWidth: '80px',
+            background: 'transparent',
+            border: 'none',
+            outline: 'none',
+            fontSize: '14px',
+            color: 'var(--text-primary)',
+            fontFamily: 'var(--font-body)',
+          }}
         />
       </div>
     </div>
   )
 }
-
-import React from 'react'
